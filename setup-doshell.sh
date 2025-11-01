@@ -2,12 +2,12 @@
 # ==============================================================================
 # DOSHELL — Windows-style command aliases for Linux
 # Author: Tom Baty
-# Version: 1.2
+# Version: 1.3
 # ==============================================================================
 set -euo pipefail
 
 VERSION_FILE="VERSION"
-VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.2')"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.3')"
 
 echo "DOSHELL — Windows-style command aliases for Linux ($VERSION)"
 echo "(Showing milestones. Use --verbose for detailed output.)"
@@ -34,7 +34,7 @@ Usage: ./setup-doshell.sh [options]
 
 Actions (choose one):
   --install        Install DOSHELL aliases
-  --uninstall      Remove DOSHELL aliases and sourcing lines
+  --uninstall      Remove DOSHELL aliases and related files
   --reinstall      Uninstall, pull latest, then reinstall
 
 Options:
@@ -56,7 +56,7 @@ EOF
 done
 
 # ------------------------------------------------------------------------------
-# Safety: must specify an action
+# Safety: require an explicit action
 # ------------------------------------------------------------------------------
 if ! $INSTALL && ! $UNINSTALL && ! $REINSTALL; then
   echo
@@ -70,6 +70,7 @@ fi
 # ------------------------------------------------------------------------------
 ALIAS_FILE="$HOME/.bash_aliases"
 LOG_FILE="$HOME/.doshell.log"
+DEPS_FILE="$HOME/.doshell.deps"
 START_MARK="# >>> DOSHELL ALIASES START <<<"
 END_MARK="# >>> DOSHELL ALIASES END <<<"
 ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
@@ -111,6 +112,17 @@ detect_shell_rc() {
 }
 
 # ------------------------------------------------------------------------------
+# Dependency Installer
+# ------------------------------------------------------------------------------
+install_dependency_if_missing() {
+  local pkg="$1"
+  if ! command -v "${pkg%% *}" >/dev/null 2>&1; then
+    run "Installing $pkg" "$PKG_CMD install -y $pkg"
+    echo "$pkg" >> "$DEPS_FILE"
+  fi
+}
+
+# ------------------------------------------------------------------------------
 # Uninstall Logic
 # ------------------------------------------------------------------------------
 uninstall_doshell() {
@@ -127,7 +139,37 @@ uninstall_doshell() {
       "sed -i '\\#${ALIAS_SOURCE_LINE}#d' \"$rcfile\""
   fi
 
-  echo "🧹 DOSHELL uninstalled (aliases cleaned)."
+  # --- Optional dependency removal -------------------------------------------
+  if [ -f "$DEPS_FILE" ]; then
+    echo
+    echo "[doshell] The following packages were installed by DOSHELL:"
+    cat "$DEPS_FILE"
+    if $ASSUME_YES; then
+      REMOVE_DEPS="y"
+    else
+      read -rp "Remove these packages as part of uninstall? [y/N]: " REMOVE_DEPS
+    fi
+    if [[ "$REMOVE_DEPS" =~ ^[Yy]$ ]]; then
+      while read -r pkg; do
+        run "Removing $pkg" "$PKG_CMD remove -y $pkg"
+      done < "$DEPS_FILE"
+    fi
+    rm -f "$DEPS_FILE"
+  fi
+
+  # --- Optional log removal --------------------------------------------------
+  if [ -f "$LOG_FILE" ]; then
+    if $ASSUME_YES; then
+      REMOVE_LOG="y"
+    else
+      read -rp "[doshell] Delete DOSHELL log file (~/.doshell.log)? [y/N]: " REMOVE_LOG
+    fi
+    if [[ "$REMOVE_LOG" =~ ^[Yy]$ ]]; then
+      run "Deleting log file" "rm -f \"$LOG_FILE\""
+    fi
+  fi
+
+  echo "🎯 DOSHELL uninstalled and cleaned."
 }
 
 # ------------------------------------------------------------------------------
@@ -136,7 +178,18 @@ uninstall_doshell() {
 install_doshell() {
   mkdir -p "$(dirname "$ALIAS_FILE")"
 
-  # --- Dependency Prompt ------------------------------------------------------
+  # --- Package manager detection ---------------------------------------------
+  if command -v dnf >/dev/null 2>&1; then
+    PKG_CMD="sudo dnf"
+  elif command -v yum >/dev/null 2>&1; then
+    PKG_CMD="sudo yum"
+  elif command -v apt >/dev/null 2>&1; then
+    PKG_CMD="sudo apt"
+  else
+    PKG_CMD=""
+  fi
+
+  # --- Dependency consent ----------------------------------------------------
   local INSTALL_DEPS=false
   if $ASSUME_YES; then
     INSTALL_DEPS=true
@@ -149,36 +202,28 @@ install_doshell() {
   fi
 
   local OMITTED_ALIASES=()
+  rm -f "$DEPS_FILE" || true
 
-  # --- Package Manager Detection ---------------------------------------------
-  local PKG_CMD="" EXTRA_PKGS=""
-  if $INSTALL_DEPS; then
-    if command -v dnf >/dev/null 2>&1; then
-      PKG_CMD="sudo dnf install -y"
-      EXTRA_PKGS="tree traceroute bind-utils iproute man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
-    elif command -v yum >/dev/null 2>&1; then
-      PKG_CMD="sudo yum install -y"
-      EXTRA_PKGS="tree traceroute bind-utils iproute man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
-    elif command -v apt >/dev/null 2>&1; then
-      PKG_CMD="sudo apt install -y"
-      EXTRA_PKGS="tree traceroute dnsutils iproute2 man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
-    fi
-
-    if [ -n "$PKG_CMD" ]; then
-      log "Installing supporting tools"
-      run "Installing dependencies" "$PKG_CMD $EXTRA_PKGS"
-    else
-      echo "❌ Unsupported package manager — skipping dependency install."
-      INSTALL_DEPS=false
-    fi
+  # --- Install dependencies only if approved ---------------------------------
+  if $INSTALL_DEPS && [ -n "$PKG_CMD" ]; then
+    log "Checking and installing missing dependencies"
+    install_dependency_if_missing "tree"
+    install_dependency_if_missing "traceroute"
+    install_dependency_if_missing "dig"
+    install_dependency_if_missing "nano"
+    install_dependency_if_missing "fzf"
+  elif ! $INSTALL_DEPS; then
+    OMITTED_ALIASES+=(tree tracert nslookup format chkdsk)
+  else
+    echo "❌ Unsupported package manager — skipping dependency install."
   fi
 
-  # --- Build Alias List ------------------------------------------------------
+  # --- Write aliases ---------------------------------------------------------
   log "Writing DOSHELL alias block"
   if ! $DRY_RUN; then
     {
       echo "$START_MARK"
-      echo "# Core DOS-style command aliases for Linux shell environments"
+      echo "# Core DOS-style command aliases"
       cat <<'EOF'
 alias dir='ls -l --color=auto'
 alias copy='cp -i'
@@ -211,8 +256,6 @@ alias movefile='mv'
 alias deltree='rm -r'
 alias time='date +"%T"'
 EOF
-
-      # dependent aliases only if deps installed
       if $INSTALL_DEPS; then
         cat <<'EOF'
 alias tree='tree -C'
@@ -221,10 +264,7 @@ alias nslookup='dig'
 alias format="echo 'Use mkfs or parted on Linux'"
 alias chkdsk="echo 'Use fsck or smartctl on Linux'"
 EOF
-      else
-        OMITTED_ALIASES+=(tree tracert nslookup format chkdsk)
       fi
-
       echo "$END_MARK"
     } >> "$ALIAS_FILE"
   fi
@@ -241,20 +281,19 @@ EOF
     echo "⚠️ Unknown shell; please source ~/.bash_aliases manually."
   fi
 
-  # --- Notify if aliases were skipped ----------------------------------------
+  # --- Notify skipped aliases ------------------------------------------------
   if [ ${#OMITTED_ALIASES[@]} -gt 0 ]; then
     echo
     echo "[doshell] Skipping these aliases (dependencies not installed): ${OMITTED_ALIASES[*]}"
   fi
 
-  # --- Optional source prompt ------------------------------------------------
+  # --- Source prompt ---------------------------------------------------------
   if $ASSUME_YES; then
     CHOICE="y"
   else
     echo
     read -rp "⚡ Source aliases now? [Y/n]: " CHOICE
   fi
-
   if [[ "$CHOICE" =~ ^[Yy]$ || -z "$CHOICE" ]]; then
     run "Sourcing aliases" "source \"$ALIAS_FILE\""
   else
