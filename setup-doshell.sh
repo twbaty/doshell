@@ -157,7 +157,7 @@ else
 fi
 
 # Install supporting tools
-do_action "Installing supporting tools" "$PKG_CMD tree dos2unix traceroute dnsutils iproute2 man-db lsattr coreutils util-linux bash-completion nano ncdu dialog whiptail fzf"
+do_action "Installing supporting tools" "$PKG_CMD tree dos2unix traceroute dnsutils iproute man-db lsattr coreutils util-linux bash-completion nano ncdu dialog whiptail fzf"
 
 # Prompt to source aliases now
 echo
