@@ -64,3 +64,5 @@ DOSHELL remains intentionally lightweight — no package build (RPM/DEB) is plan
 A GUI or `whiptail`-based setup is the next logical evolution.  
 
 ---
+
+_Last updated: **November 2025**_
