@@ -148,7 +148,6 @@ alias movefile='mv'
 alias deltree='rm -r'
 alias format='echo "Use mkfs or parted on Linux"'
 alias time='date +"%T"'
-alias setvar='echo "Use export to set variables in Linux"'
 EOF
       echo "$END_MARK"
     } >> "$ALIAS_FILE"
