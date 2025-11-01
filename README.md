@@ -1,8 +1,8 @@
 # Doshell
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Shell: Bash](https://img.shields.io/badge/Shell-Bash-blue)
-![Build: Manual](https://img.shields.io/badge/Build-Manual-lightgrey)
+![GitHub License](https://img.shields.io/github/license/twbaty/doshell)
+![GitHub Tag](https://img.shields.io/github/v/tag/twbaty/doshell?label=Version)
+![Supported Shells](https://img.shields.io/badge/Shells-Bash%2C%20Zsh%2C%20Dash-lightgrey)
 
 
 **Built for admins who live in both worlds.**
