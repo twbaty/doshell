@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Doshell Setup Script - Safe Linux Wrapper for DOS-Style Aliases
-# Author: Tom Baty (rewritten version)
-# Version: 1.0
+# Author: Tom Baty
+# Version: 1.1
 # ==============================================================================
-
 set -euo pipefail
 
 VERSION_FILE="VERSION"
 VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'unknown')"
 
 echo "Doshell setup — version $VERSION"
+echo "(Showing milestones. Use --verbose for detailed output.)"
 
 # ------------------------------------------------------------------------------
 # Flags
@@ -34,7 +34,7 @@ Usage: ./setup-doshell.sh [options]
 Options:
   -h, --help       Show this help message
   --dry-run        Show what would be done without making changes
-  --verbose        Print actions as they happen
+  --verbose        Print detailed actions as they happen
   --uninstall      Remove Doshell aliases and related shell config
   --reinstall      Uninstall, pull latest code, then reinstall
   -y, --yes        Assume 'yes' to prompts
@@ -62,7 +62,7 @@ ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
 log() {
   local msg="$1"
   echo "$(date '+%Y-%m-%d %H:%M:%S') — $msg" >> "$LOG_FILE"
-  $VERBOSE && echo "[doshell] $msg"
+  echo "[doshell] $msg"
 }
 
 run() {
@@ -70,9 +70,14 @@ run() {
   local cmd="$2"
   log "$desc"
   if $DRY_RUN; then
-    echo "[dry-run] $cmd"
+    echo "   ↳ [dry-run] $cmd"
   else
-    bash -c "$cmd"
+    if $VERBOSE; then
+      echo "   ↳ Running: $cmd"
+      bash -c "$cmd"
+    else
+      bash -c "$cmd" >/dev/null 2>&1 || echo "   ⚠️  Command failed: $cmd"
+    fi
   fi
 }
 
@@ -80,9 +85,9 @@ run() {
 # Uninstall Logic
 # ------------------------------------------------------------------------------
 uninstall_doshell() {
+  log "Cleaning existing DOSHELL aliases"
   if [ -f "$ALIAS_FILE" ]; then
-    log "Removing DOSHELL section from aliases"
-    run "Clean DOSHELL aliases" \
+    run "Removing DOSHELL section from aliases" \
       "sed -i '/$START_MARK/,/$END_MARK/d' \"$ALIAS_FILE\""
   fi
 
@@ -102,8 +107,7 @@ uninstall_doshell() {
 install_doshell() {
   mkdir -p "$(dirname "$ALIAS_FILE")"
 
-  # Write alias block
-  log "Writing DOSHELL aliases"
+  log "Writing DOSHELL alias block"
   if ! $DRY_RUN; then
     {
       echo "$START_MARK"
@@ -150,15 +154,13 @@ EOF
     } >> "$ALIAS_FILE"
   fi
 
-  # Add sourcing line
   for shellrc in "$HOME/.bashrc" "$HOME/.zshrc"; do
     if [ -f "$shellrc" ] && ! grep -Fq "$ALIAS_SOURCE_LINE" "$shellrc"; then
-      run "Updating $shellrc to source .bash_aliases" \
+      run "Ensuring $shellrc sources .bash_aliases" \
         "echo \"$ALIAS_SOURCE_LINE\" >> \"$shellrc\""
     fi
   done
 
-  # Package manager detection
   PKG_CMD=""
   if command -v dnf >/dev/null 2>&1; then
     PKG_CMD="sudo dnf install -y"
@@ -171,13 +173,12 @@ EOF
     EXTRA_PKGS="tree traceroute dnsutils iproute2 man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
   fi
 
-  if [ -n "$PKG_CMD" ]; then
+  if [ -n "${PKG_CMD:-}" ]; then
     run "Installing supporting tools" "$PKG_CMD $EXTRA_PKGS"
   else
     echo "❌ Unsupported package manager — skipping package install."
   fi
 
-  # Source now?
   if $ASSUME_YES; then
     CHOICE="y"
   else
