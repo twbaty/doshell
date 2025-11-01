@@ -35,7 +35,7 @@ for arg in "$@"; do
 done
 
 ALIAS_FILE="$HOME/.bash_aliases"
-ALIAS_SOURCE_LINE="[ -f ~/.bash_aliases ] && source ~/.bash_aliases"
+ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
 
 do_action() {
   local desc="$1"
@@ -51,7 +51,8 @@ do_action() {
   fi
 }
 
-do_action "Creating .bash_aliases with DOS-style mappings" "cat > \"$ALIAS_FILE\" <<'EOF'
+# Create alias file
+do_action "Writing DOS-style aliases to $ALIAS_FILE" "cat > \"$ALIAS_FILE\" <<'EOF'
 # DOS-style command aliases for Linux shell environments
 
 alias dir='ls -l --color=auto'
@@ -93,29 +94,35 @@ alias deltree='rm -r'
 alias format='echo \"Use mkfs or parted on Linux\"'
 EOF"
 
+# Ensure shell config files source .bash_aliases
 for shellrc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
   if [ -f "$shellrc" ] && ! grep -Fxq "$ALIAS_SOURCE_LINE" "$shellrc"; then
     do_action "Updating $shellrc to source .bash_aliases" "echo \"$ALIAS_SOURCE_LINE\" >> \"$shellrc\""
   fi
 done
 
-do_action "Installing supporting tools" "sudo apt update && sudo apt install -y \
-  tree \
-  dos2unix \
-  traceroute \
-  dnsutils \
-  iproute2 \
-  man-db \
-  lsattr \
-  coreutils \
-  util-linux \
-  bash-completion \
-  nano \
-  ncdu \
-  dialog \
-  whiptail \
-  fzf"
+# Detect package manager
+if command -v dnf >/dev/null 2>&1; then
+  PKG_CMD="sudo dnf install -y"
+elif command -v yum >/dev/null 2>&1; then
+  PKG_CMD="sudo yum install -y"
+elif command -v apt >/dev/null 2>&1; then
+  PKG_CMD="sudo apt install -y"
+else
+  echo "❌ Unsupported package manager. Please install dependencies manually."
+  exit 1
+fi
 
-do_action "Sourcing aliases now" ". \"$ALIAS_FILE\" 2>/dev/null || echo \"Manual source may be needed in this shell.\""
+# Install supporting tools
+do_action "Installing supporting tools" "$PKG_CMD tree dos2unix traceroute dnsutils iproute2 man-db lsattr coreutils util-linux bash-completion nano ncdu dialog whiptail fzf"
 
-echo "🎉 Doshell setup complete. Restart your shell or run: source ~/.bash_aliases"
+# Prompt to source aliases now
+echo
+read -p "⚡ Source aliases now? [Y/n]: " choice
+if [[ "$choice" =~ ^[Yy]$ || -z "$choice" ]]; then
+  do_action "Sourcing aliases" ". \"$ALIAS_FILE\" 2>/dev/null || echo \"Manual source may be needed in this shell.\""
+else
+  echo "ℹ️ You can manually run: source ~/.bash_aliases"
+fi
+
+echo "🎉 Doshell setup complete."
