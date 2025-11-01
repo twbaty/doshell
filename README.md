@@ -1,5 +1,10 @@
 # Doshell
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Shell: Bash](https://img.shields.io/badge/Shell-Bash-blue)
+![Build: Manual](https://img.shields.io/badge/Build-Manual-lightgrey)
+
+
 **Built for admins who live in both worlds.**
 
 Doshell is a lightweight shell enhancement for Linux environments, designed for system administrators and power users who frequently switch between Windows and Linux. It provides a familiar set of DOS-style command aliases (`dir`, `copy`, `del`, `cls`, etc.) and installs optional tools that mimic Windows CLI behavior.
