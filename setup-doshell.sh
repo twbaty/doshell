@@ -1,103 +1,113 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# ==============================================================================
+# Doshell Setup Script - Safe Linux Wrapper for DOS-Style Aliases
+# Author: Tom Baty (rewritten version)
+# Version: 1.0
+# ==============================================================================
 
-echo "Doshell setup — version $(cat VERSION)"
+set -euo pipefail
 
+VERSION_FILE="VERSION"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'unknown')"
+
+echo "Doshell setup — version $VERSION"
+
+# ------------------------------------------------------------------------------
 # Flags
+# ------------------------------------------------------------------------------
 DRY_RUN=false
 VERBOSE=false
 UNINSTALL=false
 REINSTALL=false
+ASSUME_YES=false
 
-# Parse arguments
+# ------------------------------------------------------------------------------
+# Argument Parsing
+# ------------------------------------------------------------------------------
 for arg in "$@"; do
   case "$arg" in
     -h|--help)
-      echo "Doshell Setup Script"
-      echo
-      echo "Usage:"
-      echo "  ./setup-doshell.sh [options]"
-      echo
-      echo "Options:"
-      echo "  -h, --help       Show this help message"
-      echo "  --dry-run        Show what would be done without making changes"
-      echo "  --verbose        Print actions as they happen"
-      echo "  --uninstall      Remove Doshell aliases and shell config entries"
-      echo "  --reinstall      Uninstall, pull latest code, and reinstall"
+      cat <<EOF
+Doshell Setup Script
+Usage: ./setup-doshell.sh [options]
+
+Options:
+  -h, --help       Show this help message
+  --dry-run        Show what would be done without making changes
+  --verbose        Print actions as they happen
+  --uninstall      Remove Doshell aliases and related shell config
+  --reinstall      Uninstall, pull latest code, then reinstall
+  -y, --yes        Assume 'yes' to prompts
+EOF
       exit 0
       ;;
-    --dry-run)
-      DRY_RUN=true
-      ;;
-    --verbose)
-      VERBOSE=true
-      ;;
-    --uninstall)
-      UNINSTALL=true
-      ;;
-    --reinstall)
-      REINSTALL=true
-      ;;
-    *)
-      echo "Unknown option: $arg"
-      exit 1
-      ;;
+    --dry-run) DRY_RUN=true ;;
+    --verbose) VERBOSE=true ;;
+    --uninstall) UNINSTALL=true ;;
+    --reinstall) REINSTALL=true ;;
+    -y|--yes) ASSUME_YES=true ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
 done
 
+# ------------------------------------------------------------------------------
+# Environment Setup
+# ------------------------------------------------------------------------------
 ALIAS_FILE="$HOME/.bash_aliases"
-ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
 LOG_FILE="$HOME/.doshell.log"
+START_MARK="# >>> DOSHELL ALIASES START <<<"
+END_MARK="# >>> DOSHELL ALIASES END <<<"
+ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
 
-log_action() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') — $1" >> "$LOG_FILE"
+log() {
+  local msg="$1"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') — $msg" >> "$LOG_FILE"
+  $VERBOSE && echo "[doshell] $msg"
 }
 
-do_action() {
+run() {
   local desc="$1"
   local cmd="$2"
-
-  log_action "$desc"
+  log "$desc"
   if $DRY_RUN; then
-    echo "[dry-run] $desc: $cmd"
+    echo "[dry-run] $cmd"
   else
-    if $VERBOSE; then
-      echo "[doshell] $desc..."
-    fi
-    eval "$cmd"
+    bash -c "$cmd"
   fi
 }
 
-# 🔁 Reinstall logic
-if $REINSTALL; then
-  do_action "Uninstalling current Doshell setup" "$0 --uninstall $([ "$DRY_RUN" = true ] && echo "--dry-run") $([ "$VERBOSE" = true ] && echo "--verbose")"
-  do_action "Pulling latest code from GitHub" "git pull"
-  do_action "Re-running setup" "$0 $([ "$DRY_RUN" = true ] && echo "--dry-run") $([ "$VERBOSE" = true ] && echo "--verbose")"
-  exit 0
-fi
-
-# 🧹 Uninstall logic
-if $UNINSTALL; then
+# ------------------------------------------------------------------------------
+# Uninstall Logic
+# ------------------------------------------------------------------------------
+uninstall_doshell() {
   if [ -f "$ALIAS_FILE" ]; then
-    do_action "Backing up existing alias file" "cp \"$ALIAS_FILE\" \"$ALIAS_FILE.bak\""
-    do_action "Removing alias file" "rm -f \"$ALIAS_FILE\""
-  else
-    log_action "No alias file found to back up or remove"
+    log "Removing DOSHELL section from aliases"
+    run "Clean DOSHELL aliases" \
+      "sed -i '/$START_MARK/,/$END_MARK/d' \"$ALIAS_FILE\""
   fi
 
   for shellrc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
     if [ -f "$shellrc" ]; then
-      do_action "Removing sourcing line from $shellrc" "sed -i '\#[ -f ~/.bash_aliases ] && source ~/.bash_aliases#d' \"$shellrc\""
+      run "Removing sourcing line from $shellrc" \
+        "sed -i '\\#${ALIAS_SOURCE_LINE}#d' \"$shellrc\""
     fi
   done
 
-  echo "🧹 Doshell uninstalled. Backup saved as ~/.bash_aliases.bak"
-  exit 0
-fi
+  echo "🧹 Doshell uninstalled (aliases cleaned)."
+}
 
-# ✅ Install logic
-do_action "Writing DOS-style aliases to $ALIAS_FILE" "cat > \"$ALIAS_FILE\" <<'EOF'
-# DOS-style command aliases for Linux shell environments
+# ------------------------------------------------------------------------------
+# Install Logic
+# ------------------------------------------------------------------------------
+install_doshell() {
+  mkdir -p "$(dirname "$ALIAS_FILE")"
 
+  # Write alias block
+  log "Writing DOSHELL aliases"
+  if ! $DRY_RUN; then
+    {
+      echo "$START_MARK"
+      cat <<'EOF'
 alias dir='ls -l --color=auto'
 alias tree='tree -C'
 alias copy='cp -i'
@@ -110,18 +120,16 @@ alias type='cat'
 alias cls='clear'
 alias ver='uname -a'
 alias help='man'
-alias path='echo \$PATH'
-alias prompt='echo \$PS1'
-alias title='echo \"Use PS1 to customize prompt title\"'
-alias chkdsk='echo \"Use fsck or smartctl on Linux\"'
+alias path='echo $PATH'
+alias prompt='echo $PS1'
+alias title='echo "Use PS1 to customize prompt title"'
+alias chkdsk='echo "Use fsck or smartctl on Linux"'
 alias attrib='lsattr'
-alias echo='echo'
-alias pause='read -p \"Press any key to continue...\"'
-alias exit='logout'
+alias pause='read -p "Press any key to continue..."'
 alias more='more'
 alias less='less'
-alias find='find . -name'
-alias sort='sort'
+alias findfile='find . -name'
+alias sortfile='sort'
 alias ipconfig='ip a'
 alias ping='ping -c 4'
 alias tracert='traceroute'
@@ -134,40 +142,74 @@ alias fc='diff'
 alias xcopy='cp -r'
 alias movefile='mv'
 alias deltree='rm -r'
-alias format='echo \"Use mkfs or parted on Linux\"'
+alias format='echo "Use mkfs or parted on Linux"'
 alias time='date +"%T"'
-alias set='echo "Use export to set variables in Linux"' 
-EOF"
-
-# Ensure shell config files source .bash_aliases
-for shellrc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
-  if [ -f "$shellrc" ] && ! grep -Fxq "$ALIAS_SOURCE_LINE" "$shellrc"; then
-    do_action "Updating $shellrc to source .bash_aliases" "echo \"$ALIAS_SOURCE_LINE\" >> \"$shellrc\""
+alias setvar='echo "Use export to set variables in Linux"'
+EOF
+      echo "$END_MARK"
+    } >> "$ALIAS_FILE"
   fi
-done
 
-# Detect package manager
-if command -v dnf >/dev/null 2>&1; then
-  PKG_CMD="sudo dnf install -y"
-elif command -v yum >/dev/null 2>&1; then
-  PKG_CMD="sudo yum install -y"
-elif command -v apt >/dev/null 2>&1; then
-  PKG_CMD="sudo apt install -y"
-else
-  echo "❌ Unsupported package manager. Please install dependencies manually."
-  exit 1
+  # Add sourcing line
+  for shellrc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$shellrc" ] && ! grep -Fq "$ALIAS_SOURCE_LINE" "$shellrc"; then
+      run "Updating $shellrc to source .bash_aliases" \
+        "echo \"$ALIAS_SOURCE_LINE\" >> \"$shellrc\""
+    fi
+  done
+
+  # Package manager detection
+  PKG_CMD=""
+  if command -v dnf >/dev/null 2>&1; then
+    PKG_CMD="sudo dnf install -y"
+    EXTRA_PKGS="tree traceroute bind-utils iproute man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
+  elif command -v yum >/dev/null 2>&1; then
+    PKG_CMD="sudo yum install -y"
+    EXTRA_PKGS="tree traceroute bind-utils iproute man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
+  elif command -v apt >/dev/null 2>&1; then
+    PKG_CMD="sudo apt install -y"
+    EXTRA_PKGS="tree traceroute dnsutils iproute2 man-db e2fsprogs attr util-linux bash-completion nano ncdu fzf"
+  fi
+
+  if [ -n "$PKG_CMD" ]; then
+    run "Installing supporting tools" "$PKG_CMD $EXTRA_PKGS"
+  else
+    echo "❌ Unsupported package manager — skipping package install."
+  fi
+
+  # Source now?
+  if $ASSUME_YES; then
+    CHOICE="y"
+  else
+    read -rp "⚡ Source aliases now? [Y/n]: " CHOICE
+  fi
+
+  if [[ "$CHOICE" =~ ^[Yy]$ || -z "$CHOICE" ]]; then
+    run "Sourcing aliases" "source \"$ALIAS_FILE\""
+  else
+    echo "ℹ️ Run 'source ~/.bash_aliases' to activate manually."
+  fi
+
+  echo "🎉 Doshell setup complete."
+}
+
+# ------------------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------------------
+if $REINSTALL; then
+  uninstall_doshell
+  if [ -d .git ]; then
+    run "Updating codebase" "git pull"
+  else
+    echo "⚠️ Not a Git repository; skipping git pull."
+  fi
+  install_doshell
+  exit 0
 fi
 
-# Install supporting tools
-do_action "Installing supporting tools" "$PKG_CMD tree dos2unix traceroute dnsutils iproute man-db lsattr coreutils util-linux bash-completion nano ncdu dialog whiptail fzf"
-
-# Prompt to source aliases now
-echo
-read -p "⚡ Source aliases now? [Y/n]: " choice
-if [[ "$choice" =~ ^[Yy]$ || -z "$choice" ]]; then
-  do_action "Sourcing aliases" ". \"$ALIAS_FILE\" 2>/dev/null || echo \"Manual source may be needed in this shell.\""
-else
-  echo "ℹ️ You can manually run: source ~/.bash_aliases"
+if $UNINSTALL; then
+  uninstall_doshell
+  exit 0
 fi
 
-echo "🎉 Doshell setup complete."
+install_doshell
