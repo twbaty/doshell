@@ -65,6 +65,13 @@ chmod +x setup-doshell.sh
 
 ---
 
+🐚 Shell Compatibility
+Doshell is built around .bash_aliases, which is automatically sourced in most Bash environments. For users of other shells (like Zsh or Ash), the setup script attempts to source .bash_aliases via .zshrc and .profile.
+
+If you're using a non-Bash shell and aliases aren't activating, you may need to manually source the file or copy the alias definitions into your shell's preferred config file.
+
+---
+
 ## 📜 Version History
 
 - **v1.0** — Initial release with core aliases and setup script
