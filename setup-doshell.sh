@@ -135,6 +135,8 @@ alias xcopy='cp -r'
 alias movefile='mv'
 alias deltree='rm -r'
 alias format='echo \"Use mkfs or parted on Linux\"'
+alias time='date +"%T"'
+alias set='echo "Use export to set variables in Linux"' 
 EOF"
 
 # Ensure shell config files source .bash_aliases
