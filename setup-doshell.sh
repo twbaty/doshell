@@ -86,11 +86,7 @@ if $UNINSTALL; then
 
   for shellrc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
     if [ -f "$shellrc" ]; then
-      do_action "Removing sourcing line from $shellrc" "sed -i '/\
-
-\[ -f ~/.bash_aliases \\]
-
- && source ~/.bash_aliases/d' \"$shellrc\""
+      do_action "Removing sourcing line from $shellrc" "sed -i '\#[ -f ~/.bash_aliases ] && source ~/.bash_aliases#d' \"$shellrc\""
     fi
   done
 
