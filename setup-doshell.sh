@@ -2,20 +2,41 @@
 # ==============================================================================
 # DOSHELL — Windows-style command aliases for Linux
 # Author: Tom Baty
-# Version: 1.4
+# Version: 1.5 Final
+# License: MIT
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the “Software”), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 # ==============================================================================
+
 set -euo pipefail
 
 VERSION_FILE="VERSION"
-VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.4')"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.5 Final')"
 LOG_FILE="$HOME/.doshell.log"
 DEPS_FILE="$HOME/.doshell.deps"
+LICENSE_NOTE="Licensed under MIT — free to use, modify, and distribute with attribution"
+COPYRIGHT_NOTE="© 2025 Tom Baty"
 
-# ------------------------------------------------------------------------------
-# Header
-# ------------------------------------------------------------------------------
 echo "DOSHELL — Windows-style command aliases for Linux ($VERSION)"
-echo "(Showing milestones. Use --verbose for detailed output.)"
+echo "$LICENSE_NOTE"
+echo "$COPYRIGHT_NOTE"
+echo
 
 # ------------------------------------------------------------------------------
 # Flags
@@ -49,6 +70,9 @@ Options:
   --dry-run        Show what would be done without making changes
   --verbose        Print detailed actions as they happen
   -y, --yes        Assume 'yes' to all prompts
+
+License: MIT — free to use, modify, and distribute with attribution
+(c) 2025 Tom Baty
 EOF
       exit 0
       ;;
@@ -69,11 +93,13 @@ done
 if $SHOW_VERSION; then
   echo
   echo "Version: $VERSION"
+  echo "$LICENSE_NOTE"
+  echo "$COPYRIGHT_NOTE"
   echo
   if [ -f "$LOG_FILE" ]; then
     echo "Log file: $LOG_FILE"
-    echo "  Last 3 log entries:"
-    tail -n 3 "$LOG_FILE"
+    echo "  Last 5 log entries:"
+    tail -n 5 "$LOG_FILE"
     echo
   else
     echo "No DOSHELL log file found."
@@ -86,11 +112,16 @@ if $SHOW_VERSION; then
   else
     echo "No recorded dependency installations."
   fi
+
+  echo
+  echo "Repository: https://github.com/twbaty/doshell"
+  echo "For license details, see LICENSE or the header above."
+  echo "==============================================================="
   exit 0
 fi
 
 # ------------------------------------------------------------------------------
-# Safety: require explicit action
+# Require explicit action
 # ------------------------------------------------------------------------------
 if ! $INSTALL && ! $UNINSTALL && ! $REINSTALL; then
   echo
@@ -100,7 +131,7 @@ if ! $INSTALL && ! $UNINSTALL && ! $REINSTALL; then
 fi
 
 # ------------------------------------------------------------------------------
-# Environment Setup
+# Environment setup
 # ------------------------------------------------------------------------------
 ALIAS_FILE="$HOME/.bash_aliases"
 START_MARK="# >>> DOSHELL ALIASES START <<<"
@@ -165,7 +196,6 @@ uninstall_doshell() {
       "sed -i '\\#${ALIAS_SOURCE_LINE}#d' \"$rcfile\""
   fi
 
-  # Dependencies cleanup
   if [ -f "$DEPS_FILE" ]; then
     echo
     echo "[doshell] The following packages were installed by DOSHELL:"
@@ -183,7 +213,6 @@ uninstall_doshell() {
     rm -f "$DEPS_FILE"
   fi
 
-  # Log cleanup
   if [ -f "$LOG_FILE" ]; then
     if $ASSUME_YES; then
       REMOVE_LOG="y"
@@ -195,7 +224,7 @@ uninstall_doshell() {
     fi
   fi
 
-  echo "🎯 DOSHELL uninstalled and cleaned."
+  echo "🎯 DOSHELL uninstalled and cleaned. $LICENSE_NOTE"
 }
 
 # ------------------------------------------------------------------------------
@@ -319,7 +348,7 @@ EOF
     echo "ℹ️ Run 'source ~/.bash_aliases' to activate manually."
   fi
 
-  echo "🎉 DOSHELL setup complete."
+  echo "🎉 DOSHELL setup complete. $LICENSE_NOTE"
 }
 
 # ------------------------------------------------------------------------------
