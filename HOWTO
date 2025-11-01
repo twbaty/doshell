@@ -1,0 +1,35 @@
+# 🐚 Doshell Installation Guide
+
+Doshell brings familiar DOS-style commands to modern Linux shells. Whether you're on WSL, Ubuntu, Fedora, or anything with Bash, Doshell helps bridge the muscle memory gap with intuitive aliases and enhancements.
+
+## 🚀 Installation
+
+Clone the repository:
+  git clone https://github.com/twbaty/doshell.git
+  cd doshell
+
+Make the setup script executable and run it:
+  chmod +x setup-doshell.sh
+  ./setup-doshell.sh
+
+Reload your shell:
+  source ~/.bashrc  # or source ~/.zshrc
+
+Verify installation by running:
+  dir
+  cls
+  copy
+
+🧠 Compatibility
+Doshell is tested on System V–style Linux distributions using Bash and apt-based package management. It should work on any Linux system with a Bash-compatible shell. BSD-style or minimalist distros (e.g., Slackware, Alpine, FreeBSD) may require manual adaptation.
+
+📦 Package Manager Detection (Coming Soon)
+Future versions will auto-detect your distro’s package manager (apt, yum, dnf, pacman, etc.) and adjust install behavior accordingly.
+
+🛠 Contributing
+Pull requests welcome! If you’re using Doshell on a non-standard distro and have tweaks to share, we’d love to include them.
+
+
+---
+
+No steps, no interruptions — just the full file. Let me know if you want a version with badges, license info, or GitHub metadata.
