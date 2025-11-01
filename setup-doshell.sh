@@ -2,13 +2,18 @@
 # ==============================================================================
 # DOSHELL — Windows-style command aliases for Linux
 # Author: Tom Baty
-# Version: 1.3
+# Version: 1.4
 # ==============================================================================
 set -euo pipefail
 
 VERSION_FILE="VERSION"
-VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.3')"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.4')"
+LOG_FILE="$HOME/.doshell.log"
+DEPS_FILE="$HOME/.doshell.deps"
 
+# ------------------------------------------------------------------------------
+# Header
+# ------------------------------------------------------------------------------
 echo "DOSHELL — Windows-style command aliases for Linux ($VERSION)"
 echo "(Showing milestones. Use --verbose for detailed output.)"
 
@@ -21,6 +26,7 @@ INSTALL=false
 UNINSTALL=false
 REINSTALL=false
 ASSUME_YES=false
+SHOW_VERSION=false
 
 # ------------------------------------------------------------------------------
 # Argument Parsing
@@ -36,6 +42,7 @@ Actions (choose one):
   --install        Install DOSHELL aliases
   --uninstall      Remove DOSHELL aliases and related files
   --reinstall      Uninstall, pull latest, then reinstall
+  --version        Display DOSHELL version and log summary
 
 Options:
   -h, --help       Show this help message
@@ -50,17 +57,44 @@ EOF
     --install) INSTALL=true ;;
     --uninstall) UNINSTALL=true ;;
     --reinstall) REINSTALL=true ;;
+    --version) SHOW_VERSION=true ;;
     -y|--yes) ASSUME_YES=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
 
 # ------------------------------------------------------------------------------
-# Safety: require an explicit action
+# Version flag
+# ------------------------------------------------------------------------------
+if $SHOW_VERSION; then
+  echo
+  echo "Version: $VERSION"
+  echo
+  if [ -f "$LOG_FILE" ]; then
+    echo "Log file: $LOG_FILE"
+    echo "  Last 3 log entries:"
+    tail -n 3 "$LOG_FILE"
+    echo
+  else
+    echo "No DOSHELL log file found."
+    echo
+  fi
+
+  if [ -f "$DEPS_FILE" ]; then
+    echo "Dependencies installed by DOSHELL:"
+    cat "$DEPS_FILE"
+  else
+    echo "No recorded dependency installations."
+  fi
+  exit 0
+fi
+
+# ------------------------------------------------------------------------------
+# Safety: require explicit action
 # ------------------------------------------------------------------------------
 if ! $INSTALL && ! $UNINSTALL && ! $REINSTALL; then
   echo
-  echo "Usage: ./setup-doshell.sh [--install|--uninstall|--reinstall] [options]"
+  echo "Usage: ./setup-doshell.sh [--install|--uninstall|--reinstall|--version] [options]"
   echo "Run with --help for details."
   exit 0
 fi
@@ -69,8 +103,6 @@ fi
 # Environment Setup
 # ------------------------------------------------------------------------------
 ALIAS_FILE="$HOME/.bash_aliases"
-LOG_FILE="$HOME/.doshell.log"
-DEPS_FILE="$HOME/.doshell.deps"
 START_MARK="# >>> DOSHELL ALIASES START <<<"
 END_MARK="# >>> DOSHELL ALIASES END <<<"
 ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
@@ -97,9 +129,6 @@ run() {
   fi
 }
 
-# ------------------------------------------------------------------------------
-# Shell Detection
-# ------------------------------------------------------------------------------
 detect_shell_rc() {
   local shellname
   shellname=$(ps -p $$ -o comm= | sed 's/^-//')
@@ -111,9 +140,6 @@ detect_shell_rc() {
   esac
 }
 
-# ------------------------------------------------------------------------------
-# Dependency Installer
-# ------------------------------------------------------------------------------
 install_dependency_if_missing() {
   local pkg="$1"
   if ! command -v "${pkg%% *}" >/dev/null 2>&1; then
@@ -139,7 +165,7 @@ uninstall_doshell() {
       "sed -i '\\#${ALIAS_SOURCE_LINE}#d' \"$rcfile\""
   fi
 
-  # --- Optional dependency removal -------------------------------------------
+  # Dependencies cleanup
   if [ -f "$DEPS_FILE" ]; then
     echo
     echo "[doshell] The following packages were installed by DOSHELL:"
@@ -157,7 +183,7 @@ uninstall_doshell() {
     rm -f "$DEPS_FILE"
   fi
 
-  # --- Optional log removal --------------------------------------------------
+  # Log cleanup
   if [ -f "$LOG_FILE" ]; then
     if $ASSUME_YES; then
       REMOVE_LOG="y"
@@ -178,7 +204,6 @@ uninstall_doshell() {
 install_doshell() {
   mkdir -p "$(dirname "$ALIAS_FILE")"
 
-  # --- Package manager detection ---------------------------------------------
   if command -v dnf >/dev/null 2>&1; then
     PKG_CMD="sudo dnf"
   elif command -v yum >/dev/null 2>&1; then
@@ -189,7 +214,6 @@ install_doshell() {
     PKG_CMD=""
   fi
 
-  # --- Dependency consent ----------------------------------------------------
   local INSTALL_DEPS=false
   if $ASSUME_YES; then
     INSTALL_DEPS=true
@@ -204,7 +228,6 @@ install_doshell() {
   local OMITTED_ALIASES=()
   rm -f "$DEPS_FILE" || true
 
-  # --- Install dependencies only if approved ---------------------------------
   if $INSTALL_DEPS && [ -n "$PKG_CMD" ]; then
     log "Checking and installing missing dependencies"
     install_dependency_if_missing "tree"
@@ -218,7 +241,6 @@ install_doshell() {
     echo "❌ Unsupported package manager — skipping dependency install."
   fi
 
-  # --- Write aliases ---------------------------------------------------------
   log "Writing DOSHELL alias block"
   if ! $DRY_RUN; then
     {
@@ -269,7 +291,6 @@ EOF
     } >> "$ALIAS_FILE"
   fi
 
-  # --- RC File Update --------------------------------------------------------
   local rcfile
   rcfile=$(detect_shell_rc)
   if [ "$rcfile" != "unknown" ]; then
@@ -281,13 +302,11 @@ EOF
     echo "⚠️ Unknown shell; please source ~/.bash_aliases manually."
   fi
 
-  # --- Notify skipped aliases ------------------------------------------------
   if [ ${#OMITTED_ALIASES[@]} -gt 0 ]; then
     echo
     echo "[doshell] Skipping these aliases (dependencies not installed): ${OMITTED_ALIASES[*]}"
   fi
 
-  # --- Source prompt ---------------------------------------------------------
   if $ASSUME_YES; then
     CHOICE="y"
   else
