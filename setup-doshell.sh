@@ -1,4 +1,5 @@
 #!/bin/sh
+echo "Doshell setup — version $(cat VERSION)"
 
 # Doshell setup script — creates DOS-style aliases and installs supporting tools
 
