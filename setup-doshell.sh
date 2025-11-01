@@ -6,6 +6,7 @@ echo "Doshell setup — version $(cat VERSION)"
 DRY_RUN=false
 VERBOSE=false
 UNINSTALL=false
+REINSTALL=false
 
 # Parse arguments
 for arg in "$@"; do
@@ -21,6 +22,7 @@ for arg in "$@"; do
       echo "  --dry-run        Show what would be done without making changes"
       echo "  --verbose        Print actions as they happen"
       echo "  --uninstall      Remove Doshell aliases and shell config entries"
+      echo "  --reinstall      Uninstall, pull latest code, and reinstall"
       exit 0
       ;;
     --dry-run)
@@ -32,6 +34,9 @@ for arg in "$@"; do
     --uninstall)
       UNINSTALL=true
       ;;
+    --reinstall)
+      REINSTALL=true
+      ;;
     *)
       echo "Unknown option: $arg"
       exit 1
@@ -41,11 +46,17 @@ done
 
 ALIAS_FILE="$HOME/.bash_aliases"
 ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
+LOG_FILE="$HOME/.doshell.log"
+
+log_action() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') — $1" >> "$LOG_FILE"
+}
 
 do_action() {
   local desc="$1"
   local cmd="$2"
 
+  log_action "$desc"
   if $DRY_RUN; then
     echo "[dry-run] $desc: $cmd"
   else
@@ -56,9 +67,22 @@ do_action() {
   fi
 }
 
-# 🔄 Uninstall logic
+# 🔁 Reinstall logic
+if $REINSTALL; then
+  do_action "Uninstalling current Doshell setup" "$0 --uninstall $([ "$DRY_RUN" = true ] && echo "--dry-run") $([ "$VERBOSE" = true ] && echo "--verbose")"
+  do_action "Pulling latest code from GitHub" "git pull"
+  do_action "Re-running setup" "$0 $([ "$DRY_RUN" = true ] && echo "--dry-run") $([ "$VERBOSE" = true ] && echo "--verbose")"
+  exit 0
+fi
+
+# 🧹 Uninstall logic
 if $UNINSTALL; then
-  do_action "Removing alias file" "rm -f \"$ALIAS_FILE\""
+  if [ -f "$ALIAS_FILE" ]; then
+    do_action "Backing up existing alias file" "cp \"$ALIAS_FILE\" \"$ALIAS_FILE.bak\""
+    do_action "Removing alias file" "rm -f \"$ALIAS_FILE\""
+  else
+    log_action "No alias file found to back up or remove"
+  fi
 
   for shellrc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
     if [ -f "$shellrc" ]; then
@@ -70,7 +94,7 @@ if $UNINSTALL; then
     fi
   done
 
-  echo "🧹 Doshell uninstalled. You can restart your shell to clear any active aliases."
+  echo "🧹 Doshell uninstalled. Backup saved as ~/.bash_aliases.bak"
   exit 0
 fi
 
