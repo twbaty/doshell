@@ -5,6 +5,7 @@ echo "Doshell setup — version $(cat VERSION)"
 # Flags
 DRY_RUN=false
 VERBOSE=false
+UNINSTALL=false
 
 # Parse arguments
 for arg in "$@"; do
@@ -19,6 +20,7 @@ for arg in "$@"; do
       echo "  -h, --help       Show this help message"
       echo "  --dry-run        Show what would be done without making changes"
       echo "  --verbose        Print actions as they happen"
+      echo "  --uninstall      Remove Doshell aliases and shell config entries"
       exit 0
       ;;
     --dry-run)
@@ -26,6 +28,9 @@ for arg in "$@"; do
       ;;
     --verbose)
       VERBOSE=true
+      ;;
+    --uninstall)
+      UNINSTALL=true
       ;;
     *)
       echo "Unknown option: $arg"
@@ -51,7 +56,25 @@ do_action() {
   fi
 }
 
-# Create alias file
+# 🔄 Uninstall logic
+if $UNINSTALL; then
+  do_action "Removing alias file" "rm -f \"$ALIAS_FILE\""
+
+  for shellrc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -f "$shellrc" ]; then
+      do_action "Removing sourcing line from $shellrc" "sed -i '/\
+
+\[ -f ~/.bash_aliases \\]
+
+ && source ~/.bash_aliases/d' \"$shellrc\""
+    fi
+  done
+
+  echo "🧹 Doshell uninstalled. You can restart your shell to clear any active aliases."
+  exit 0
+fi
+
+# ✅ Install logic
 do_action "Writing DOS-style aliases to $ALIAS_FILE" "cat > \"$ALIAS_FILE\" <<'EOF'
 # DOS-style command aliases for Linux shell environments
 
