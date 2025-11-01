@@ -62,3 +62,16 @@ git clone https://github.com/yourusername/doshell.git
 cd doshell
 chmod +x setup-doshell.sh
 ./setup-doshell.sh
+
+---
+
+## 📜 Version History
+
+- **v1.0** — Initial release with core aliases and setup script
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. You’re free to use, modify, and distribute it with attribution. See the [LICENSE](LICENSE) file for full details.
+
