@@ -1,35 +1,94 @@
-# 🐚 Doshell Installation Guide
+# Doshell — Installation Guide
 
-Doshell brings familiar DOS-style commands to modern Linux shells. Whether you're on WSL, Ubuntu, Fedora, or anything with Bash, Doshell helps bridge the muscle memory gap with intuitive aliases and enhancements.
-
-## 🚀 Installation
-
-Clone the repository:
-  git clone https://github.com/twbaty/doshell.git
-  cd doshell
-
-Make the setup script executable and run it:
-  chmod +x setup-doshell.sh
-  ./setup-doshell.sh
-
-Reload your shell:
-  source ~/.bashrc  # or source ~/.zshrc
-
-Verify installation by running:
-  dir
-  cls
-  copy
-
-🧠 Compatibility
-Doshell is tested on System V–style Linux distributions using Bash and apt-based package management. It should work on any Linux system with a Bash-compatible shell. BSD-style or minimalist distros (e.g., Slackware, Alpine, FreeBSD) may require manual adaptation.
-
-📦 Package Manager Detection (Coming Soon)
-Future versions will auto-detect your distro’s package manager (apt, yum, dnf, pacman, etc.) and adjust install behavior accordingly.
-
-🛠 Contributing
-Pull requests welcome! If you’re using Doshell on a non-standard distro and have tweaks to share, we’d love to include them.
-
+Doshell brings familiar DOS/Windows-style commands to Linux shells. Whether you're
+on WSL, Ubuntu, Fedora, or any Bash-compatible system, it bridges the muscle-memory
+gap with aliases, functions, and honest guidance for commands that belong to Linux.
 
 ---
 
-No steps, no interruptions — just the full file. Let me know if you want a version with badges, license info, or GitHub metadata.
+## Installation
+
+```bash
+git clone https://github.com/twbaty/doshell.git
+cd doshell
+chmod +x setup-doshell.sh
+./setup-doshell.sh --install
+```
+
+Reload your shell when done:
+
+```bash
+source ~/.bashrc   # or source ~/.zshrc
+```
+
+Verify it's working:
+
+```bash
+dir          # should behave like ls -l
+cls          # should clear the screen
+tasklist     # should show running processes
+```
+
+---
+
+## Installer Options
+
+| Flag | What it does |
+|------|-------------|
+| `--install` | Install aliases and optional dependencies |
+| `--uninstall` | Remove all doshell aliases and clean up |
+| `--reinstall` | `git pull` + uninstall + reinstall |
+| `--version` | Show version, log summary, installed deps |
+| `--dry-run` | Preview all changes without applying them |
+| `--verbose` | Show each command as it runs |
+| `-y` / `--yes` | Skip all confirmation prompts |
+| `--help` | Full usage information |
+
+---
+
+## Optional Dependencies
+
+During install you'll be asked whether to install optional tools:
+
+- `tree` — supports the `tree` alias
+- `traceroute` — supports `tracert`
+- `dnsutils` (`dig`) — supports `nslookup`
+- `nano` — supports `edit` and `notepad` fallback
+- `fzf` — available for future interactive features
+
+The installer detects your package manager (`apt`, `yum`, `dnf`) automatically.
+
+---
+
+## Shell Compatibility
+
+Doshell writes aliases to `~/.bash_aliases` and adds a source line to your shell's
+rc file (`~/.bashrc`, `~/.zshrc`, or `~/.profile`). It is tested on:
+
+- Bash (primary)
+- Zsh
+- Dash / Ash
+
+For any other shell, source the file manually:
+
+```bash
+source ~/.bash_aliases
+```
+
+---
+
+## Uninstalling
+
+```bash
+./setup-doshell.sh --uninstall
+```
+
+This removes the doshell alias block from `~/.bash_aliases`, removes the source
+line from your rc file, and optionally removes installed dependencies and the log.
+
+---
+
+## Contributing
+
+Pull requests welcome. If you're running Doshell on a non-standard distro and have
+tweaks to share, open an issue or PR at https://github.com/twbaty/doshell

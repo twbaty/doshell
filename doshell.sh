@@ -3,7 +3,7 @@
 # DOSHELL — Windows-style command aliases for Linux
 # Author: Tom Baty
 # License: MIT
-# Version: 1.5 Final
+# Version: 1.7
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”), to deal
@@ -24,7 +24,7 @@
 # THE SOFTWARE.
 # ==============================================================================
 
-VERSION_FILE="$HOME/Documents/code/doshell/VERSION"
+VERSION_FILE="$(dirname "$(realpath "$0")")/VERSION"
 LOG_FILE="$HOME/.doshell.log"
 DEPS_FILE="$HOME/.doshell.deps"
 LICENSE_NOTE="Licensed under MIT — free to use, modify, and distribute with attribution"
@@ -36,7 +36,7 @@ COPYRIGHT_NOTE="© 2025 Tom Baty"
 if [ -f "$VERSION_FILE" ]; then
   VERSION="$(cat "$VERSION_FILE")"
 else
-  VERSION="v1.5 Final"
+  VERSION="v1.7"
 fi
 
 echo "DOSHELL — Windows-style command aliases for Linux"
