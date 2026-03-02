@@ -274,8 +274,9 @@ install_doshell() {
   if ! $DRY_RUN; then
     {
       echo "$START_MARK"
-      echo "# Core DOS-style command aliases"
+      echo "# DOS-style command aliases and functions for Linux"
       cat <<'EOF'
+# File & directory
 alias dir='ls -l --color=auto'
 alias copy='cp -i'
 alias move='mv -i'
@@ -283,37 +284,74 @@ alias del='rm -i'
 alias ren='mv'
 alias md='mkdir -p'
 alias rd='rmdir'
+alias xcopy='cp -r'
+alias deltree='rm -r'
 alias type='cat'
+alias findfile='find . -name'
+
+# Terminal
 alias cls='clear'
+alias edit='nano'
+alias pause='read -p "Press any key to continue..."'
+
+# System info
 alias ver='uname -a'
-alias help='man'
+alias where='which'
 alias path='echo $PATH'
 alias prompt='echo $PS1'
+alias mem='free -h'
+alias vol='df -h'
+alias tasklist='ps aux'
 alias attrib='lsattr'
-alias pause='read -p "Press any key to continue..."'
-alias more='more'
-alias less='less'
-alias findfile='find . -name'
-alias sortfile='sort'
+alias comp='diff'
+alias fc='diff'
+
+# Network
 alias ipconfig='ip a'
 alias ping='ping -c 4'
 alias netstat='ss -tuln'
-alias hostname='hostname'
-alias edit='nano'
-alias comp='diff'
-alias fc='diff'
-alias xcopy='cp -r'
-alias movefile='mv'
-alias deltree='rm -r'
-alias time='date +"%T"'
+
+# Stubs
+alias chkdsk="echo 'Use fsck or smartctl on Linux'"
+alias format="echo 'Use mkfs or parted on Linux'"
+
+# sysinfo — condensed systeminfo analog
+sysinfo() {
+    echo "--- OS ---"; uname -a; echo
+    echo "--- CPU ---"
+    lscpu 2>/dev/null | grep -E "^(Architecture|CPU\(s\)|Model name|CPU MHz)" \
+        || grep -m1 "model name" /proc/cpuinfo
+    echo
+    echo "--- Memory ---"; free -h; echo
+    echo "--- Disk ---";   df -h
+}
+
+# taskkill /PID <pid> [/F]  |  taskkill /IM <name> [/F]
+taskkill() {
+    local pid="" name="" force=false
+    while [[ $# -gt 0 ]]; do
+        case "${1^^}" in
+            /PID) pid="$2";  shift 2 ;;
+            /IM)  name="$2"; shift 2 ;;
+            /F)   force=true; shift ;;
+            *)    shift ;;
+        esac
+    done
+    if [[ -n "$name" ]]; then
+        $force && pkill -9 -f "$name" || pkill -f "$name"
+    elif [[ -n "$pid" ]]; then
+        $force && kill -9 "$pid" || kill "$pid"
+    else
+        echo "Usage: taskkill /PID <pid> [/F]"
+        echo "       taskkill /IM <name> [/F]"
+    fi
+}
 EOF
       if $INSTALL_DEPS; then
         cat <<'EOF'
 alias tree='tree -C'
 alias tracert='traceroute'
 alias nslookup='dig'
-alias format="echo 'Use mkfs or parted on Linux'"
-alias chkdsk="echo 'Use fsck or smartctl on Linux'"
 EOF
       fi
       echo "$END_MARK"

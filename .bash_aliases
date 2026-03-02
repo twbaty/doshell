@@ -1,5 +1,9 @@
-# DOS-style command aliases for Linux shell environments
+# DOS-style command aliases and functions for Linux shell environments
+# Project: doshell — https://github.com/twbaty/doshell
 
+# ------------------------------------------------------------
+# File & directory navigation
+# ------------------------------------------------------------
 alias dir='ls -l --color=auto'
 alias tree='tree -C'
 alias copy='cp -i'
@@ -8,32 +12,83 @@ alias del='rm -i'
 alias ren='mv'
 alias md='mkdir -p'
 alias rd='rmdir'
+alias xcopy='cp -r'
+alias deltree='rm -r'
 alias type='cat'
+alias findfile='find . -name'    # 'find' kept intact — use findfile for DOS-style search
+
+# ------------------------------------------------------------
+# Terminal
+# ------------------------------------------------------------
 alias cls='clear'
+alias pause='read -p "Press any key to continue..."'
+alias edit='nano'
+
+# ------------------------------------------------------------
+# System info
+# ------------------------------------------------------------
 alias ver='uname -a'
-alias help='man'
+alias where='which'
 alias path='echo $PATH'
 alias prompt='echo $PS1'
-alias title='echo "Use PS1 to customize prompt title"'
-alias chkdsk='echo "Use fsck or smartctl on Linux"'
+alias mem='free -h'
+alias vol='df -h'
+alias tasklist='ps aux'
 alias attrib='lsattr'
-alias echo='echo'
-alias pause='read -p "Press any key to continue..."'
-alias exit='logout'
-alias more='more'
-alias less='less'
-alias find='find . -name'
-alias sort='sort'
+alias comp='diff'
+alias fc='diff'
+
+sysinfo() {
+    echo "--- OS ---"
+    uname -a
+    echo
+    echo "--- CPU ---"
+    lscpu 2>/dev/null | grep -E "^(Architecture|CPU\(s\)|Model name|CPU MHz)" || grep -m1 "model name" /proc/cpuinfo
+    echo
+    echo "--- Memory ---"
+    free -h
+    echo
+    echo "--- Disk ---"
+    df -h
+}
+
+# ------------------------------------------------------------
+# Network
+# ------------------------------------------------------------
 alias ipconfig='ip a'
 alias ping='ping -c 4'
 alias tracert='traceroute'
 alias netstat='ss -tuln'
-alias hostname='hostname'
 alias nslookup='dig'
-alias edit='nano'
-alias comp='diff'
-alias fc='diff'
-alias xcopy='cp -r'
-alias movefile='mv'
-alias deltree='rm -r'
+
+# ------------------------------------------------------------
+# Process management
+# ------------------------------------------------------------
+
+# taskkill /PID <pid> [/F]   — kill by PID
+# taskkill /IM <name> [/F]   — kill by process name
+taskkill() {
+    local pid="" name="" force=false
+    while [[ $# -gt 0 ]]; do
+        case "${1^^}" in
+            /PID) pid="$2";  shift 2 ;;
+            /IM)  name="$2"; shift 2 ;;
+            /F)   force=true; shift ;;
+            *)    shift ;;
+        esac
+    done
+    if [[ -n "$name" ]]; then
+        $force && pkill -9 -f "$name" || pkill -f "$name"
+    elif [[ -n "$pid" ]]; then
+        $force && kill -9 "$pid" || kill "$pid"
+    else
+        echo "Usage: taskkill /PID <pid> [/F]"
+        echo "       taskkill /IM <name> [/F]"
+    fi
+}
+
+# ------------------------------------------------------------
+# Informational stubs (no Linux equivalent)
+# ------------------------------------------------------------
+alias chkdsk='echo "Use fsck or smartctl on Linux"'
 alias format='echo "Use mkfs or parted on Linux"'
