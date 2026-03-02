@@ -1,5 +1,27 @@
 # Changelog
 
+## [v1.7] — 2026-03-01
+
+### Added
+- `notepad [file]` — opens file in `$EDITOR` (falls back to nano); same muscle memory as Windows
+- `start [path/url]` — opens file, folder, or URL in the default app via `xdg-open`
+- `explorer` — alias for `xdg-open .` (open current folder in file manager)
+- Informational stubs for system admin commands — rather than wrapping them, doshell
+  now tells you the correct native Linux command:
+  - `diskpart` → `fdisk` / `parted`
+  - `regedit` → points to `/etc/` and `~/.config/`
+  - `taskmgr` → `htop` / `top`
+  - `services` → `systemctl list-units`
+  - `sc` → `systemctl start|stop|status|enable|disable`
+  - `shutdown` → `sudo shutdown -h now` / `sudo reboot`
+
+### Philosophy
+Doshell translates syntax where the intent is identical (file ops, process listing,
+network inspection). For Linux sysadmin tasks, it points you to the right native tool
+rather than hiding what's really happening under a Windows wrapper.
+
+---
+
 ## [v1.6] — 2026-03-01
 
 ### Added

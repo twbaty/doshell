@@ -24,6 +24,13 @@ alias cls='clear'
 alias pause='read -p "Press any key to continue..."'
 alias edit='nano'
 
+# Open a file in the default editor (like notepad on Windows)
+notepad() { ${EDITOR:-nano} "${1:-.}"; }
+
+# Open a file, folder, or URL in the default app (like 'start' on Windows)
+start()    { xdg-open "${1:-.}" 2>/dev/null & }
+alias explorer='xdg-open .'
+
 # ------------------------------------------------------------
 # System info
 # ------------------------------------------------------------
@@ -88,7 +95,15 @@ taskkill() {
 }
 
 # ------------------------------------------------------------
-# Informational stubs (no Linux equivalent)
+# System admin stubs
+# These are Linux sysadmin tasks — doshell points you to the
+# right native tool rather than wrapping it.
 # ------------------------------------------------------------
-alias chkdsk='echo "Use fsck or smartctl on Linux"'
-alias format='echo "Use mkfs or parted on Linux"'
+alias chkdsk='echo    "Linux: sudo fsck /dev/sdX   (unmount first)"'
+alias format='echo    "Linux: sudo mkfs.ext4 /dev/sdX  or  sudo parted"'
+alias diskpart='echo  "Linux: sudo fdisk /dev/sdX   or   sudo parted"'
+alias regedit='echo   "No registry on Linux. Config lives in /etc/ and ~/.config/"'
+alias taskmgr='echo   "Linux: htop   (or top, or ps aux)"'
+alias services='echo  "Linux: systemctl list-units --type=service"'
+alias sc='echo        "Linux: sudo systemctl start|stop|status|enable|disable <service>"'
+alias shutdown='echo  "Linux: sudo shutdown -h now  (halt)   sudo reboot  (restart)"'
