@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # ==============================================================================
 # DOSHELL — DOS-style command aliases and functions for Linux
 # Source: https://github.com/twbaty/doshell
