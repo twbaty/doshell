@@ -271,8 +271,9 @@ sls() {
         echo "Usage: sls [-CaseSensitive] [-NotMatch] pattern [files...]"
         return 1
     fi
-    local args=("-E" "$icase")
-    [[ -n "$invert" ]] && args+=("$invert")
+    local args=("-E")
+    if [[ -n "$icase" ]];  then args+=("$icase");  fi
+    if [[ -n "$invert" ]]; then args+=("$invert"); fi
     if [[ ${#files[@]} -gt 0 ]]; then
         grep "${args[@]}" -- "$pattern" "${files[@]}"
     else
