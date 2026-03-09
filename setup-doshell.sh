@@ -2,11 +2,11 @@
 # ==============================================================================
 # DOSHELL — Windows-style command aliases for Linux
 # Author: Tom Baty
-# Version: 1.7
+# Version: 1.8
 # License: MIT
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the “Software”), to deal
+# of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
@@ -15,7 +15,7 @@
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -26,8 +26,9 @@
 
 set -euo pipefail
 
-VERSION_FILE="VERSION"
-VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.7')"
+SCRIPT_DIR="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
+VERSION_FILE="$SCRIPT_DIR/VERSION"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.8')"
 LOG_FILE="$HOME/.doshell.log"
 DEPS_FILE="$HOME/.doshell.deps"
 LICENSE_NOTE="Licensed under MIT — free to use, modify, and distribute with attribution"
@@ -76,13 +77,13 @@ License: MIT — free to use, modify, and distribute with attribution
 EOF
       exit 0
       ;;
-    --dry-run) DRY_RUN=true ;;
-    --verbose) VERBOSE=true ;;
-    --install) INSTALL=true ;;
+    --dry-run)   DRY_RUN=true ;;
+    --verbose)   VERBOSE=true ;;
+    --install)   INSTALL=true ;;
     --uninstall) UNINSTALL=true ;;
     --reinstall) REINSTALL=true ;;
-    --version) SHOW_VERSION=true ;;
-    -y|--yes) ASSUME_YES=true ;;
+    --version)   SHOW_VERSION=true ;;
+    -y|--yes)    ASSUME_YES=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -138,6 +139,22 @@ START_MARK="# >>> DOSHELL ALIASES START <<<"
 END_MARK="# >>> DOSHELL ALIASES END <<<"
 ALIAS_SOURCE_LINE='[ -f ~/.bash_aliases ] && source ~/.bash_aliases'
 
+# Detect package manager — sets PKG_INSTALL, PKG_REMOVE, and DIG_PKG
+PKG_INSTALL=""
+PKG_REMOVE=""
+DIG_PKG="dnsutils"
+if command -v dnf >/dev/null 2>&1; then
+  PKG_INSTALL="sudo dnf install -y"; PKG_REMOVE="sudo dnf remove -y"; DIG_PKG="bind-utils"
+elif command -v yum >/dev/null 2>&1; then
+  PKG_INSTALL="sudo yum install -y"; PKG_REMOVE="sudo yum remove -y"; DIG_PKG="bind-utils"
+elif command -v apt-get >/dev/null 2>&1; then
+  PKG_INSTALL="sudo apt-get install -y"; PKG_REMOVE="sudo apt-get remove -y"; DIG_PKG="dnsutils"
+elif command -v apt >/dev/null 2>&1; then
+  PKG_INSTALL="sudo apt install -y"; PKG_REMOVE="sudo apt remove -y"; DIG_PKG="dnsutils"
+elif command -v pacman >/dev/null 2>&1; then
+  PKG_INSTALL="sudo pacman -S --noconfirm"; PKG_REMOVE="sudo pacman -R --noconfirm"; DIG_PKG="bind"
+fi
+
 log() {
   local msg="$1"
   echo "$(date '+%Y-%m-%d %H:%M:%S') — $msg" >> "$LOG_FILE"
@@ -150,31 +167,32 @@ run() {
   log "$desc"
   if $DRY_RUN; then
     echo "   ↳ [dry-run] $cmd"
+  elif $VERBOSE; then
+    echo "   ↳ Running: $cmd"
+    bash -c "$cmd" || echo "   ⚠️  Command failed: $cmd"
   else
-    if $VERBOSE; then
-      echo "   ↳ Running: $cmd"
-      bash -c "$cmd"
-    else
-      bash -c "$cmd" >/dev/null 2>&1 || echo "   ⚠️  Command failed: $cmd"
-    fi
+    bash -c "$cmd" >/dev/null 2>&1 || echo "   ⚠️  Command failed: $cmd"
   fi
 }
 
+# Use $SHELL to detect the user's login shell — more reliable than ps inside a script
 detect_shell_rc() {
   local shellname
-  shellname=$(ps -p $$ -o comm= | sed 's/^-//')
+  shellname=$(basename "${SHELL:-bash}")
   case "$shellname" in
     bash) echo "$HOME/.bashrc" ;;
     zsh)  echo "$HOME/.zshrc" ;;
-    dash) echo "$HOME/.profile" ;;
+    dash|sh) echo "$HOME/.profile" ;;
     *)    echo "unknown" ;;
   esac
 }
 
+# $1 = package to install; $2 (optional) = binary to check (defaults to $1)
 install_dependency_if_missing() {
   local pkg="$1"
-  if ! command -v "${pkg%% *}" >/dev/null 2>&1; then
-    run "Installing $pkg" "$PKG_CMD install -y $pkg"
+  local binary="${2:-$1}"
+  if ! command -v "$binary" >/dev/null 2>&1; then
+    run "Installing $pkg" "$PKG_INSTALL $pkg"
     echo "$pkg" >> "$DEPS_FILE"
   fi
 }
@@ -185,188 +203,99 @@ install_dependency_if_missing() {
 uninstall_doshell() {
   log "Cleaning existing DOSHELL aliases"
   if [ -f "$ALIAS_FILE" ]; then
+    # Use | as delimiter to avoid issues with < > # in the marker strings
     run "Removing DOSHELL section from aliases" \
-      "sed -i '/$START_MARK/,/$END_MARK/d' \"$ALIAS_FILE\""
+      "sed -i \"\|$START_MARK|,\|$END_MARK|d\" \"$ALIAS_FILE\""
   fi
 
   local rcfile
   rcfile=$(detect_shell_rc)
   if [ "$rcfile" != "unknown" ] && [ -f "$rcfile" ]; then
+    # Use grep -vF (fixed-string) to safely strip the source line without regex issues
     run "Removing sourcing line from $rcfile" \
-      "sed -i '\\#${ALIAS_SOURCE_LINE}#d' \"$rcfile\""
+      "grep -vF '$ALIAS_SOURCE_LINE' \"$rcfile\" > \"${rcfile}.doshell.tmp\" && mv \"${rcfile}.doshell.tmp\" \"$rcfile\""
   fi
 
   if [ -f "$DEPS_FILE" ]; then
     echo
     echo "[doshell] The following packages were installed by DOSHELL:"
     cat "$DEPS_FILE"
+    local REMOVE_DEPS="n"
     if $ASSUME_YES; then
       REMOVE_DEPS="y"
     else
-      read -rp "Remove these packages as part of uninstall? [y/N]: " REMOVE_DEPS
+      read -rp "Remove these packages as part of uninstall? [y/N]: " REMOVE_DEPS || true
     fi
     if [[ "$REMOVE_DEPS" =~ ^[Yy]$ ]]; then
-      while read -r pkg; do
-        run "Removing $pkg" "$PKG_CMD remove -y $pkg"
-      done < "$DEPS_FILE"
+      if [ -n "$PKG_REMOVE" ]; then
+        while read -r pkg; do
+          run "Removing $pkg" "$PKG_REMOVE $pkg"
+        done < "$DEPS_FILE"
+      else
+        echo "⚠️  No supported package manager found — please remove packages manually."
+      fi
     fi
     rm -f "$DEPS_FILE"
   fi
 
   if [ -f "$LOG_FILE" ]; then
+    local REMOVE_LOG="n"
     if $ASSUME_YES; then
       REMOVE_LOG="y"
     else
-      read -rp "[doshell] Delete DOSHELL log file (~/.doshell.log)? [y/N]: " REMOVE_LOG
+      read -rp "[doshell] Delete DOSHELL log file (~/.doshell.log)? [y/N]: " REMOVE_LOG || true
     fi
     if [[ "$REMOVE_LOG" =~ ^[Yy]$ ]]; then
       run "Deleting log file" "rm -f \"$LOG_FILE\""
     fi
   fi
 
-  echo "🎯 DOSHELL uninstalled and cleaned. $LICENSE_NOTE"
+  echo "DOSHELL uninstalled and cleaned. $LICENSE_NOTE"
 }
 
 # ------------------------------------------------------------------------------
 # Install Logic
 # ------------------------------------------------------------------------------
 install_doshell() {
-  mkdir -p "$(dirname "$ALIAS_FILE")"
-
-  if command -v dnf >/dev/null 2>&1; then
-    PKG_CMD="sudo dnf"
-  elif command -v yum >/dev/null 2>&1; then
-    PKG_CMD="sudo yum"
-  elif command -v apt >/dev/null 2>&1; then
-    PKG_CMD="sudo apt"
-  else
-    PKG_CMD=""
+  # Prevent duplicate installs — use --reinstall to update
+  if grep -qF "$START_MARK" "$ALIAS_FILE" 2>/dev/null; then
+    echo "[doshell] Already installed. Use --reinstall to update."
+    exit 0
   fi
+
+  mkdir -p "$(dirname "$ALIAS_FILE")"
 
   local INSTALL_DEPS=false
   if $ASSUME_YES; then
     INSTALL_DEPS=true
   else
     echo
-    read -rp "[doshell] Some aliases rely on extra tools (tree, traceroute, dig, etc.). Install them? [Y/n]: " choice
+    local choice=""
+    read -rp "[doshell] Some aliases rely on extra tools (tree, traceroute, dig, etc.). Install them? [Y/n]: " choice || true
     if [[ "$choice" =~ ^[Yy]$ || -z "$choice" ]]; then
       INSTALL_DEPS=true
     fi
   fi
 
-  local OMITTED_ALIASES=()
-  rm -f "$DEPS_FILE" || true
+  rm -f "$DEPS_FILE"
 
-  if $INSTALL_DEPS && [ -n "$PKG_CMD" ]; then
+  if $INSTALL_DEPS && [ -n "$PKG_INSTALL" ]; then
     log "Checking and installing missing dependencies"
     install_dependency_if_missing "tree"
     install_dependency_if_missing "traceroute"
-    install_dependency_if_missing "dig"
+    install_dependency_if_missing "$DIG_PKG" "dig"
     install_dependency_if_missing "nano"
     install_dependency_if_missing "fzf"
-  elif ! $INSTALL_DEPS; then
-    OMITTED_ALIASES+=(tree tracert nslookup format chkdsk)
-  else
-    echo "❌ Unsupported package manager — skipping dependency install."
+  elif $INSTALL_DEPS; then
+    echo "⚠️  No supported package manager found — skipping dependency install."
+    echo "    Install tree, traceroute, dig, nano, and fzf manually if needed."
   fi
 
   log "Writing DOSHELL alias block"
   if ! $DRY_RUN; then
     {
       echo "$START_MARK"
-      echo "# DOS-style command aliases and functions for Linux"
-      cat <<'EOF'
-# File & directory
-alias dir='ls -l --color=auto'
-alias copy='cp -i'
-alias move='mv -i'
-alias del='rm -i'
-alias ren='mv'
-alias md='mkdir -p'
-alias rd='rmdir'
-alias xcopy='cp -r'
-alias deltree='rm -r'
-alias type='cat'
-alias findfile='find . -name'
-
-# Terminal
-alias cls='clear'
-alias edit='nano'
-alias pause='read -p "Press any key to continue..."'
-
-# Open a file in the default editor (like notepad on Windows)
-notepad() { ${EDITOR:-nano} "${1:-.}"; }
-
-# Open a file, folder, or URL in the default app (like 'start' on Windows)
-start()    { xdg-open "${1:-.}" 2>/dev/null & }
-alias explorer='xdg-open .'
-
-# System info
-alias ver='uname -a'
-alias where='which'
-alias path='echo $PATH'
-alias prompt='echo $PS1'
-alias mem='free -h'
-alias vol='df -h'
-alias tasklist='ps aux'
-alias attrib='lsattr'
-alias comp='diff'
-alias fc='diff'
-
-# Network
-alias ipconfig='ip a'
-alias ping='ping -c 4'
-alias netstat='ss -tuln'
-
-# System admin stubs — point to the right native Linux tool
-alias chkdsk='echo    "Linux: sudo fsck /dev/sdX   (unmount first)"'
-alias format='echo    "Linux: sudo mkfs.ext4 /dev/sdX  or  sudo parted"'
-alias diskpart='echo  "Linux: sudo fdisk /dev/sdX   or   sudo parted"'
-alias regedit='echo   "No registry on Linux. Config lives in /etc/ and ~/.config/"'
-alias taskmgr='echo   "Linux: htop   (or top, or ps aux)"'
-alias services='echo  "Linux: systemctl list-units --type=service"'
-alias sc='echo        "Linux: sudo systemctl start|stop|status|enable|disable <service>"'
-alias shutdown='echo  "Linux: sudo shutdown -h now  (halt)   sudo reboot  (restart)"'
-
-# sysinfo — condensed systeminfo analog
-sysinfo() {
-    echo "--- OS ---"; uname -a; echo
-    echo "--- CPU ---"
-    lscpu 2>/dev/null | grep -E "^(Architecture|CPU\(s\)|Model name|CPU MHz)" \
-        || grep -m1 "model name" /proc/cpuinfo
-    echo
-    echo "--- Memory ---"; free -h; echo
-    echo "--- Disk ---";   df -h
-}
-
-# taskkill /PID <pid> [/F]  |  taskkill /IM <name> [/F]
-taskkill() {
-    local pid="" name="" force=false
-    while [[ $# -gt 0 ]]; do
-        case "${1^^}" in
-            /PID) pid="$2";  shift 2 ;;
-            /IM)  name="$2"; shift 2 ;;
-            /F)   force=true; shift ;;
-            *)    shift ;;
-        esac
-    done
-    if [[ -n "$name" ]]; then
-        $force && pkill -9 -f "$name" || pkill -f "$name"
-    elif [[ -n "$pid" ]]; then
-        $force && kill -9 "$pid" || kill "$pid"
-    else
-        echo "Usage: taskkill /PID <pid> [/F]"
-        echo "       taskkill /IM <name> [/F]"
-    fi
-}
-EOF
-      if $INSTALL_DEPS; then
-        cat <<'EOF'
-alias tree='tree -C'
-alias tracert='traceroute'
-alias nslookup='dig'
-EOF
-      fi
+      cat "$SCRIPT_DIR/doshell_aliases.sh"
       echo "$END_MARK"
     } >> "$ALIAS_FILE"
   fi
@@ -375,30 +304,23 @@ EOF
   rcfile=$(detect_shell_rc)
   if [ "$rcfile" != "unknown" ]; then
     if [ -f "$rcfile" ] && ! grep -Fq "$ALIAS_SOURCE_LINE" "$rcfile"; then
+      # Ensure file ends with a newline before appending
+      if [ -s "$rcfile" ] && [ "$(tail -c1 "$rcfile" | wc -l)" -eq 0 ]; then
+        echo "" >> "$rcfile"
+      fi
       run "Ensuring $rcfile sources .bash_aliases" \
         "echo \"$ALIAS_SOURCE_LINE\" >> \"$rcfile\""
     fi
   else
-    echo "⚠️ Unknown shell; please source ~/.bash_aliases manually."
+    echo "⚠️  Unknown shell; please add the following to your shell rc file manually:"
+    echo "   $ALIAS_SOURCE_LINE"
   fi
 
-  if [ ${#OMITTED_ALIASES[@]} -gt 0 ]; then
-    echo
-    echo "[doshell] Skipping these aliases (dependencies not installed): ${OMITTED_ALIASES[*]}"
-  fi
-
-  if $ASSUME_YES; then
-    CHOICE="y"
-  else
-    echo
-    read -rp "⚡ Source aliases now? [Y/n]: " CHOICE
-  fi
-  if [[ "$CHOICE" =~ ^[Yy]$ || -z "$CHOICE" ]]; then
-    run "Sourcing aliases" "source \"$ALIAS_FILE\""
-  else
-    echo "ℹ️ Run 'source ~/.bash_aliases' to activate manually."
-  fi
-
+  echo
+  echo "[doshell] To activate aliases, run:"
+  echo "   source ~/.bash_aliases"
+  echo "   — or open a new terminal."
+  echo
   echo "🎉 DOSHELL setup complete. $LICENSE_NOTE"
 }
 
@@ -407,10 +329,10 @@ EOF
 # ------------------------------------------------------------------------------
 if $REINSTALL; then
   uninstall_doshell
-  if [ -d .git ]; then
-    run "Updating codebase" "git pull"
+  if [ -d "$SCRIPT_DIR/.git" ]; then
+    run "Updating codebase" "git -C \"$SCRIPT_DIR\" pull"
   else
-    echo "⚠️ Not a Git repository; skipping git pull."
+    echo "⚠️  Not a Git repository; skipping git pull."
   fi
   install_doshell
   exit 0

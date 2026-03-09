@@ -38,19 +38,18 @@ Type what you know — let Linux respond.
 | `ren` | `mv` |
 | `md` | `mkdir -p` |
 | `rd` | `rmdir` |
-| `xcopy` | `cp -r` |
-| `deltree` | `rm -r` |
-| `type` | `cat` |
+| `xcopy` | `cp -ri` (prompts on overwrite) |
+| `deltree` | `rm -ri` (prompts on each file) |
 | `findfile` | `find . -name` |
 | `attrib` | `lsattr` |
-| `comp` / `fc` | `diff` |
+| `comp` | `diff` |
 
 ### Terminal
 
 | Windows | Linux |
 |---------|-------|
 | `cls` | `clear` |
-| `pause` | `read -p "Press any key..."` |
+| `pause` | single-keypress wait (no Enter needed) |
 | `edit` | `nano` |
 | `notepad [file]` | opens `$EDITOR` (falls back to nano) |
 | `start [path/url]` | `xdg-open` — opens in default app |
@@ -156,6 +155,7 @@ The installer detects `apt`, `yum`, and `dnf` automatically and uses whichever i
 | v1.5 | Install/uninstall/reinstall, shell detection, dependency tracking, logging |
 | v1.6 | `where`, `tasklist`, `mem`, `vol`, `sysinfo`, `taskkill` function; fixed no-op and broken aliases |
 | v1.7 | `notepad`, `start`, `explorer`; sysadmin stubs with Linux guidance |
+| v1.8 | Bug fixes: shell detection, `dig` package name, duplicate install guard, safe uninstall sed, `taskkill` operator precedence, `deltree`/`xcopy` safety prompts, removed builtin-shadowing aliases (`fc`, `type`) |
 
 ---
 

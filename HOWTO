@@ -1,8 +1,9 @@
 # Doshell — Installation Guide
 
 Doshell brings familiar DOS/Windows-style commands to Linux shells. Whether you're
-on WSL, Ubuntu, Fedora, or any Bash-compatible system, it bridges the muscle-memory
-gap with aliases, functions, and honest guidance for commands that belong to Linux.
+on WSL, Ubuntu, Fedora, Arch, or any Bash-compatible system, it bridges the
+muscle-memory gap with aliases, functions, and honest guidance for commands that
+belong to Linux.
 
 ---
 

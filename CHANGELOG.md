@@ -1,5 +1,31 @@
 # Changelog
 
+## [v1.8] — 2026-03-09
+
+### Fixed
+- `detect_shell_rc()` now uses `$SHELL` env var instead of `ps -p $$` — reliable when running inside a script or non-interactive shell
+- `dig` dependency now installs the correct package per distro: `bind-utils` (RHEL/Fedora/Arch) or `dnsutils` (Debian/Ubuntu)
+- `install_dependency_if_missing` now accepts a separate binary name, so package name and binary name can differ
+- `PKG_INSTALL`/`PKG_REMOVE` split out globally so `uninstall_doshell` can also remove packages (was broken — `PKG_CMD` was local to install only)
+- sed commands in uninstall now use `|` as delimiter and `grep -vF` for the source line — safe against special characters in markers
+- Duplicate install guard: `--install` now exits early if DOSHELL is already installed; use `--reinstall` to update
+- `run()` verbose mode now handles command failures consistently with non-verbose mode
+- Sourcing prompt removed — sourcing inside a script subshell doesn't affect the parent shell; now always prints manual instruction
+- All `read` prompts use `|| true` to avoid `set -e` exits on EOF
+- Newline safety: appending to rc file now ensures a trailing newline exists first
+
+### Changed
+- `alias deltree='rm -ri'` — added `-i` to prompt before deleting (was `rm -r`, no confirmation)
+- `alias xcopy='cp -ri'` — added `-i` to prompt on overwrite (was `cp -r`, silent overwrite)
+- `alias pause` — now uses `read -rsn1` for a true single-keypress wait (no Enter required)
+- Added `pacman` (Arch Linux) package manager support
+
+### Removed
+- `alias fc='diff'` — `fc` is a bash builtin (edit and re-run last command); shadowing it breaks interactive shell history editing
+- `alias type='cat'` — `type` is a bash builtin (show command type/path); shadowing it breaks `type ls`, `type cd`, etc.
+
+---
+
 ## [v1.7] — 2026-03-01
 
 ### Added
@@ -69,7 +95,7 @@ rather than hiding what's really happening under a Windows wrapper.
 
 ### License
 Licensed under the **MIT License (© 2025 Tom Baty)**.  
-See [LICENSE](./LICENSE) or run `./doshell.sh` for attribution details.
+See [LICENSE](./LICENSE) for full details.
 
 ---
 

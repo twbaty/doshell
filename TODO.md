@@ -3,7 +3,7 @@
 ![GitHub License](https://img.shields.io/github/license/twbaty/doshell)
 ![GitHub Tag](https://img.shields.io/github/v/tag/twbaty/doshell?label=Version)
 
-**Author:** Tom Baty | **License:** MIT | **Current Version:** v1.7
+**Author:** Tom Baty | **License:** MIT | **Current Version:** v1.8
 
 > "Because sometimes your fingers still type *dir*."
 
@@ -33,6 +33,21 @@
 - [x] Added `explorer` — `xdg-open .`
 - [x] Added sysadmin stubs: `shutdown`, `sc`, `services`, `taskmgr`, `diskpart`, `regedit`
 - [x] Stubs teach the correct Linux tool rather than wrapping it
+
+### v1.8
+- [x] Fixed `detect_shell_rc()` to use `$SHELL` — reliable in script context
+- [x] Fixed `dig` package name: `bind-utils` (RHEL/Arch) vs `dnsutils` (Debian)
+- [x] Removed `alias fc='diff'` — was shadowing bash builtin `fc` (fix command)
+- [x] Removed `alias type='cat'` — was shadowing bash builtin `type`
+- [x] Fixed `deltree` and `xcopy` to use `-i` for safety prompts
+- [x] Fixed `taskkill` operator precedence (`&&/||` → explicit `if/else`)
+- [x] Fixed `run()` verbose mode to handle errors consistently
+- [x] Fixed duplicate install guard (--install checks for existing block)
+- [x] Fixed uninstall sed to use safe delimiters; source line removal uses `grep -vF`
+- [x] Removed misleading "source now" subshell prompt
+- [x] Added `pacman` package manager support (Arch Linux)
+- [x] Fixed `PKG_CMD` scoping bug — uninstall can now also remove packages
+- [x] Fixed `pause` alias to use `read -rsn1` (true keypress, no Enter needed)
 
 ---
 
