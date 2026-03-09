@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.9] — 2026-03-09
+
+### Added
+- `findstr` — grep wrapper with Windows-style flags: `/i` (case-insensitive), `/r` (regex), `/n` (line numbers), `/v` (invert), `/s` (recursive), `/m` (filenames only), `/c:"string"` (literal with spaces)
+- `set` — env var function: no args lists all vars, `set VAR` filters by prefix, `set VAR=value` exports; shell flags (`set -x`, `set +e`, etc.) forwarded to bash builtin
+- `mklink` — symlink/hardlink function with Windows syntax: `/D`/`/J` for symlinks, `/H` for hard links
+- `clip` — stdin-to-clipboard function; detects `xclip`, `xsel`, or `wl-copy` automatically
+- `runas` — sudo wrapper; supports Windows-style `/user:username` flag
+- `title` — sets the terminal window/tab title
+- `typefile` — `cat` wrapper (safe replacement for the `type` alias removed in v1.8)
+- `net` — Windows `net` command stubs: `net user`, `net start/stop/restart`, `net use`, `net share`, `net view`
+- Stubs: `icacls`, `cacls` → `chmod`/`chown`; `wmic` → `lshw`/`dmidecode`; `schtasks` → `crontab`/systemd timers
+- `arp` and `route` — stubbed only if the native Linux tool is absent
+
+---
+
 ## [v1.8] — 2026-03-09
 
 ### Fixed

@@ -2,7 +2,7 @@
 # ==============================================================================
 # DOSHELL — Windows-style command aliases for Linux
 # Author: Tom Baty
-# Version: 1.8
+# Version: 1.9
 # License: MIT
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,7 +28,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
 VERSION_FILE="$SCRIPT_DIR/VERSION"
-VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.8')"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'v1.9')"
 LOG_FILE="$HOME/.doshell.log"
 DEPS_FILE="$HOME/.doshell.deps"
 LICENSE_NOTE="Licensed under MIT — free to use, modify, and distribute with attribution"

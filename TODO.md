@@ -3,7 +3,7 @@
 ![GitHub License](https://img.shields.io/github/license/twbaty/doshell)
 ![GitHub Tag](https://img.shields.io/github/v/tag/twbaty/doshell?label=Version)
 
-**Author:** Tom Baty | **License:** MIT | **Current Version:** v1.8
+**Author:** Tom Baty | **License:** MIT | **Current Version:** v1.9
 
 > "Because sometimes your fingers still type *dir*."
 
@@ -48,6 +48,17 @@
 - [x] Added `pacman` package manager support (Arch Linux)
 - [x] Fixed `PKG_CMD` scoping bug — uninstall can now also remove packages
 - [x] Fixed `pause` alias to use `read -rsn1` (true keypress, no Enter needed)
+
+### v1.9
+- [x] `findstr` — grep wrapper with Windows-style flags
+- [x] `set` — env var function with builtin passthrough
+- [x] `mklink` — symlink/hardlink with Windows syntax
+- [x] `clip` — stdin to clipboard (xclip/xsel/wl-copy)
+- [x] `runas` — sudo wrapper with /user: support
+- [x] `title` — set terminal window title
+- [x] `typefile` — safe cat replacement (type shadows bash builtin)
+- [x] `net` — stubs for net user/start/stop/use/share
+- [x] Stubs: icacls, cacls, wmic, schtasks, arp, route
 
 ---
 

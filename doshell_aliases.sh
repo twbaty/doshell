@@ -17,11 +17,17 @@ alias xcopy='cp -ri'
 alias deltree='rm -ri'
 alias findfile='find . -name'
 
+# type shadows a bash builtin so it was removed — typefile is the safe equivalent
+typefile() { cat "${1:?Usage: typefile <file>}"; }
+
 # Terminal
 alias cls='clear'
 alias edit='nano'
 # pause: single-keypress wait — no Enter needed, like Windows pause
 alias pause='read -rsn1 -p "Press any key to continue..."; echo'
+
+# title: set the terminal window/tab title
+title() { printf '\033]0;%s\007' "$*"; }
 
 # Open a file in the default editor (like notepad on Windows)
 notepad() { ${EDITOR:-nano} "${1:-.}"; }
@@ -41,6 +47,24 @@ alias tasklist='ps aux'
 alias attrib='lsattr'
 alias comp='diff'
 
+# set: show/export environment variables — passes shell flags through to builtin
+# Usage: set              → list all env vars (sorted)
+#        set VAR          → show vars matching prefix VAR
+#        set VAR=value    → export VAR=value into current session
+#        set -x / +e etc. → forwarded to bash builtin (shell options unchanged)
+set() {
+    if [[ $# -eq 0 ]]; then
+        printenv | sort
+    elif [[ "$1" == [-+]* ]]; then
+        builtin set "$@"
+    elif [[ "$1" == *=* ]]; then
+        # shellcheck disable=SC2163
+        export "${1?}"
+    else
+        printenv | grep "^${1}" | sort
+    fi
+}
+
 # Network
 alias ipconfig='ip a'
 alias ping='ping -c 4'
@@ -50,6 +74,119 @@ alias netstat='ss -tuln'
 command -v tree       >/dev/null 2>&1 && alias tree='tree -C'
 command -v traceroute >/dev/null 2>&1 && alias tracert='traceroute'
 command -v dig        >/dev/null 2>&1 && alias nslookup='dig'
+# arp and route: only stub if the native tool is absent
+command -v arp        >/dev/null 2>&1 || alias arp='echo "Linux: ip neigh"'
+command -v route      >/dev/null 2>&1 || alias route='echo "Linux: ip route   or   ip route add/del"'
+
+# runas: run a command as another user (sudo wrapper with Windows-style /user: flag)
+# Usage: runas /user:username command   or   runas command   (runs as root)
+runas() {
+    case "$1" in
+        /user:*|/USER:*)
+            local user="${1#*:}"; shift; sudo -u "$user" "$@" ;;
+        *)
+            sudo "$@" ;;
+    esac
+}
+
+# clip: pipe stdin to the clipboard — like Windows 'clip'
+# Usage: echo "hello" | clip     cat file.txt | clip
+clip() {
+    if command -v xclip >/dev/null 2>&1; then
+        xclip -selection clipboard
+    elif command -v xsel >/dev/null 2>&1; then
+        xsel --clipboard --input
+    elif command -v wl-copy >/dev/null 2>&1; then
+        wl-copy
+    else
+        echo "clip: no clipboard tool found — install xclip, xsel, or wl-clipboard"
+        return 1
+    fi
+}
+
+# mklink: create symbolic or hard links with Windows-style syntax
+# Usage: mklink [/D] [/J] [/H] <link> <target>
+#        /D /J  symbolic link (directory)    /H  hard link
+mklink() {
+    local hard=false link="" target=""
+    while [[ $# -gt 0 ]]; do
+        case "${1^^}" in
+            /D|/J) shift ;;
+            /H)    hard=true; shift ;;
+            *)
+                if [[ -z "$link" ]]; then link="$1"
+                else target="$1"; fi
+                shift ;;
+        esac
+    done
+    if [[ -z "$link" || -z "$target" ]]; then
+        echo "Usage: mklink [/D] [/H] [/J] <link> <target>"
+        echo "       /D /J  symbolic link   /H  hard link"
+        return 1
+    fi
+    if $hard; then ln "$target" "$link"; else ln -s "$target" "$link"; fi
+}
+
+# findstr: search for text in files with Windows-style flags (grep wrapper)
+# Usage: findstr [/i] [/r] [/n] [/v] [/s] [/m] [/c:"string"] pattern [files...]
+#        /i  case-insensitive    /r  regular expression (default: literal)
+#        /n  show line numbers   /v  invert (show non-matching lines)
+#        /s  search recursively  /m  print filenames only
+findstr() {
+    local fixed=true icase=false extra_flags=() pattern="" files=() has_pattern=false
+    while [[ $# -gt 0 ]]; do
+        case "${1^^}" in
+            /I)   icase=true;  shift ;;
+            /R)   fixed=false; shift ;;
+            /L)   fixed=true;  shift ;;
+            /N)   extra_flags+=("-n"); shift ;;
+            /V)   extra_flags+=("-v"); shift ;;
+            /S)   extra_flags+=("-r"); shift ;;
+            /M)   extra_flags+=("-l"); shift ;;
+            /C:*) pattern="${1:3}"; has_pattern=true; shift ;;
+            /*)   shift ;;
+            *)
+                if ! $has_pattern; then
+                    pattern="$1"; has_pattern=true
+                else
+                    files+=("$1")
+                fi
+                shift ;;
+        esac
+    done
+    if ! $has_pattern; then
+        echo "Usage: findstr [/i] [/r] [/n] [/v] [/s] [/m] [/c:\"string\"] pattern [files...]"
+        return 1
+    fi
+    local match_flag
+    if $fixed; then match_flag="-F"; else match_flag="-E"; fi
+    local args=("$match_flag")
+    if $icase; then args+=("-i"); fi
+    args+=("${extra_flags[@]}")
+    if [[ ${#files[@]} -gt 0 ]]; then
+        grep "${args[@]}" -- "$pattern" "${files[@]}"
+    else
+        grep "${args[@]}" -- "$pattern"
+    fi
+}
+
+# net: Windows net command stubs with Linux equivalents
+net() {
+    case "${1,,}" in
+        user)    echo "Linux: id / getent passwd / sudo useradd / usermod / userdel" ;;
+        start)   echo "Linux: sudo systemctl start ${2:-<service>}" ;;
+        stop)    echo "Linux: sudo systemctl stop ${2:-<service>}" ;;
+        restart) echo "Linux: sudo systemctl restart ${2:-<service>}" ;;
+        share)   echo "Linux: /etc/samba/smb.conf (Samba)   or   /etc/exports (NFS)" ;;
+        use)     echo "Linux: sudo mount -t cifs //server/share /mnt/point   or   sshfs" ;;
+        view)    echo "Linux: nmblookup -S '*'   or   smbtree (requires samba-client)" ;;
+        *)       printf "Linux equivalents for Windows net commands:\n"
+                 printf "  net user         → id / getent passwd / useradd\n"
+                 printf "  net start|stop   → sudo systemctl start|stop <service>\n"
+                 printf "  net use          → mount (CIFS/NFS) or sshfs\n"
+                 printf "  net share        → /etc/samba/smb.conf or /etc/exports\n" ;;
+    esac
+}
 
 # System admin stubs — tell you the right Linux tool rather than hiding it
 alias chkdsk='echo "Linux: sudo fsck /dev/sdX   (unmount first)"'
@@ -60,6 +197,10 @@ alias taskmgr='echo "Linux: htop   (or top, or ps aux)"'
 alias services='echo "Linux: systemctl list-units --type=service"'
 alias sc='echo "Linux: sudo systemctl start|stop|status|enable|disable <service>"'
 alias shutdown='echo "Linux: sudo shutdown -h now  (halt)   sudo reboot  (restart)"'
+alias icacls='echo "Linux: chmod / chown / ls -la   (see: man chmod, man chown)"'
+alias cacls='echo "Linux: chmod / chown / ls -la   (see: man chmod, man chown)"'
+alias wmic='echo "Linux: lshw / dmidecode / lscpu / lsblk / lspci   (see: man lshw)"'
+alias schtasks='echo "Linux: crontab -e   (user tasks)   or   /etc/cron.d/   or   systemd timers"'
 
 # sysinfo — condensed systeminfo analog
 sysinfo() {

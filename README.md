@@ -40,9 +40,11 @@ Type what you know — let Linux respond.
 | `rd` | `rmdir` |
 | `xcopy` | `cp -ri` (prompts on overwrite) |
 | `deltree` | `rm -ri` (prompts on each file) |
+| `typefile` | `cat` (renamed — `type` shadows a bash builtin) |
 | `findfile` | `find . -name` |
 | `attrib` | `lsattr` |
 | `comp` | `diff` |
+| `mklink [/D] [/H] link target` | `ln [-s] target link` |
 
 ### Terminal
 
@@ -50,18 +52,21 @@ Type what you know — let Linux respond.
 |---------|-------|
 | `cls` | `clear` |
 | `pause` | single-keypress wait (no Enter needed) |
+| `title <text>` | sets terminal window/tab title |
 | `edit` | `nano` |
 | `notepad [file]` | opens `$EDITOR` (falls back to nano) |
 | `start [path/url]` | `xdg-open` — opens in default app |
 | `explorer` | `xdg-open .` — opens current folder |
+| `clip` | pipes stdin to clipboard (`echo hello \| clip`) |
 
-### System Info
+### System Info & Environment
 
 | Windows | Linux |
 |---------|-------|
 | `ver` | `uname -a` |
 | `where` | `which` |
 | `path` | `echo $PATH` |
+| `set` | list / filter / export env vars |
 | `mem` | `free -h` |
 | `vol` | `df -h` |
 | `sysinfo` | OS + CPU + memory + disk summary |
@@ -75,6 +80,7 @@ Type what you know — let Linux respond.
 | `tracert` | `traceroute` |
 | `netstat` | `ss -tuln` |
 | `nslookup` | `dig` |
+| `net user / start / stop / use / share` | guided stubs |
 
 ### Process Management
 
@@ -83,6 +89,13 @@ Type what you know — let Linux respond.
 | `tasklist` | `ps aux` |
 | `taskkill /PID <n> [/F]` | `kill [-9] <pid>` |
 | `taskkill /IM <name> [/F]` | `pkill [-9] -f <name>` |
+| `runas [/user:name] cmd` | `sudo [-u name] cmd` |
+
+### Text Search
+
+| Windows | Linux |
+|---------|-------|
+| `findstr [/i] [/r] [/n] [/v] [/s] pattern [files]` | `grep` wrapper with Windows flags |
 
 ### Sysadmin Stubs
 
@@ -98,6 +111,9 @@ These commands are Linux sysadmin territory — doshell tells you the right tool
 | `chkdsk` | `sudo fsck /dev/sdX` |
 | `format` | `sudo mkfs.ext4 /dev/sdX` |
 | `regedit` | Config lives in `/etc/` and `~/.config/` |
+| `icacls` / `cacls` | `chmod` / `chown` / `ls -la` |
+| `wmic` | `lshw` / `dmidecode` / `lscpu` / `lsblk` |
+| `schtasks` | `crontab -e` or systemd timers |
 
 ---
 
@@ -155,6 +171,7 @@ The installer detects `apt-get`/`apt`, `yum`, `dnf`, and `pacman` automatically 
 | v1.6 | `where`, `tasklist`, `mem`, `vol`, `sysinfo`, `taskkill` function; fixed no-op and broken aliases |
 | v1.7 | `notepad`, `start`, `explorer`; sysadmin stubs with Linux guidance |
 | v1.8 | Bug fixes: shell detection, `dig` package name, duplicate install guard, safe uninstall sed, `taskkill` operator precedence, `deltree`/`xcopy` safety prompts, removed builtin-shadowing aliases (`fc`, `type`) |
+| v1.9 | `findstr`, `set`, `mklink`, `clip`, `runas`, `title`, `net`, `typefile`; stubs for `icacls`, `cacls`, `wmic`, `schtasks`, `arp`, `route` |
 
 ---
 
