@@ -76,11 +76,32 @@
 
 ## Possible Future Work
 
-- [ ] `--quiet` flag for minimal install output
-- [ ] Colorized output for milestones and status messages
-- [ ] `--custom` flag: interactive alias selection (fzf-based, not whiptail)
-- [ ] Profile presets: `basic`, `networking`, `power`
-- [ ] Post-install alias self-test (`doshell --test`)
+### Installer Improvements
+
+- [ ] `--quiet` flag — suppress all output except errors; useful in scripts and dotfile bootstrappers
+- [ ] `--status` flag — show whether doshell is installed, which rc file has the source line, and whether aliases are currently active in the shell; useful for troubleshooting
+- [ ] Colorized installer output — green for success, yellow for warnings, red for errors; use `tput` for portability, not hardcoded ANSI codes
+- [ ] `--custom` flag — interactive alias selection using `fzf`; let users pick only the aliases they want rather than installing everything
+- [ ] Profile presets — `--profile basic` (file/dir/terminal only), `--profile networking` (adds network aliases), `--profile power` (everything including PS section); written to a separate marker so reinstall knows which profile was used
+- [ ] Post-install self-test — `--test` flag that sources the aliases in a subshell and verifies each one resolves to a real command or function; reports any that are broken or point to missing tools
+
+### Alias & Function Additions
+
+- [ ] `robocopy` — `rsync` wrapper with Windows-style flags (`/MIR`, `/E`, `/Z`, `/LOG`); heavily used by Windows power users for backup/sync
+- [ ] `where /r` — recursive `which`; find all instances of a command in PATH, not just the first
+- [ ] `systeminfo` — expand `sysinfo` to match more of Windows `systeminfo` output: hostname, domain, boot time, installed hotfixes (uptime, /etc/os-release, last reboot)
+- [ ] `color` — stub; explain terminal colors via `tput` or ANSI escape sequences
+- [ ] `assoc` / `ftype` — stubs; explain Linux MIME/file-type associations via `xdg-mime`
+- [ ] `cipher` — stub; point to `gpg`, `openssl`, and LUKS for encryption
+- [ ] `gpupdate` — stub; explain that Linux has no group policy but note `/etc/profile.d/` for system-wide shell config
+
+### PowerShell Additions
+
+- [ ] `Select-Object` equivalent — a safe-named wrapper (not `select`, which is a bash builtin) around `awk`/`cut` for extracting columns; something like `selobj`
+- [ ] `Where-Object` pipe filter — safe-named wrapper (not `where`) around `grep` for object-style filtering; something like `whereobj`
+- [ ] `Get-Content` / `gc` — `gc` is not a builtin; could alias to `cat` with optional `-Tail` / `-Wait` support (maps to `tail -f`)
+- [ ] `Out-File` / `tee` — `tee` already exists natively; a stub or thin wrapper noting the equivalence
+- [ ] `ConvertTo-Json` / `ConvertFrom-Json` — stubs pointing to `jq`; increasingly relevant as PS users use JSON pipelines
 
 ---
 
