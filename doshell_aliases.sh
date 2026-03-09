@@ -282,7 +282,7 @@ sls() {
 
 # Format stubs — no direct bash equivalent; point to the right native tools
 alias ft='echo "Linux: column -t (table)   or   awk for custom formatting"'
-alias fl='echo "Linux: cat -n / less / awk '\''{ print NR\": \"$0 }'\'' for list-style output"'
+alias fl='echo "Linux: cat -n / less / awk for formatted list output"'
 alias measure='echo "Linux: wc -l (lines)   wc -w (words)   wc -c (bytes)   wc (all)"'
 
 # System admin stubs — tell you the right Linux tool rather than hiding it
