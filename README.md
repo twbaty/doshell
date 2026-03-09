@@ -64,7 +64,6 @@ Type what you know — let Linux respond.
 | `path` | `echo $PATH` |
 | `mem` | `free -h` |
 | `vol` | `df -h` |
-| `tasklist` | `ps aux` |
 | `sysinfo` | OS + CPU + memory + disk summary |
 
 ### Network
@@ -143,7 +142,7 @@ source ~/.bash_aliases
 
 ## Package Manager Support
 
-The installer detects `apt`, `yum`, and `dnf` automatically and uses whichever is available to install optional dependencies (`tree`, `traceroute`, `dnsutils`, `nano`, `fzf`).
+The installer detects `apt-get`/`apt`, `yum`, `dnf`, and `pacman` automatically and uses whichever is available to install optional dependencies (`tree`, `traceroute`, `dnsutils`/`bind-utils`, `nano`, `fzf`).
 
 ---
 
