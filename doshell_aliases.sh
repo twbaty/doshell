@@ -188,6 +188,103 @@ net() {
     esac
 }
 
+# ==============================================================================
+# PowerShell aliases — for users who live in PS and land on bash
+# ==============================================================================
+
+# gl / pwd — Get-Location
+alias gl='pwd'
+
+# gal — Get-Alias: list all active aliases
+alias gal='alias'
+
+# gps — Get-Process
+alias gps='ps aux'
+
+# gcm — Get-Command: find where a command lives
+gcm() { command -v "${1:?Usage: gcm <command>}"; }
+
+# ii — Invoke-Item: open a file or folder in the default app (like 'start')
+alias ii='xdg-open'
+
+# gv — Get-Variable: show environment variables
+gv() {
+    if [[ $# -eq 0 ]]; then printenv | sort
+    else printenv | grep "^${1}" | sort; fi
+}
+
+# ni — New-Item: create a file or directory
+# Usage: ni <file>   or   ni -ItemType Directory <dirname>
+ni() {
+    if [[ "${1,,}" == "-itemtype" && "${2,,}" == "directory" ]]; then
+        mkdir -p "${3:?Usage: ni -ItemType Directory <dirname>}"
+    else
+        touch "${1:?Usage: ni <filename>}"
+    fi
+}
+
+# spps — Stop-Process: kill by name or PID with optional -Force
+# Usage: spps -Name <name> [-Force]   or   spps -Id <pid> [-Force]
+spps() {
+    local name="" pid="" force=false
+    while [[ $# -gt 0 ]]; do
+        case "${1,,}" in
+            -name)  name="${2:-}"; shift 2 ;;
+            -id)    pid="${2:-}";  shift 2 ;;
+            -force) force=true; shift ;;
+            *)
+                if [[ "$1" =~ ^[0-9]+$ ]]; then pid="$1"; else name="$1"; fi
+                shift ;;
+        esac
+    done
+    if [[ -n "$name" ]]; then
+        if $force; then pkill -9 -f "$name"; else pkill -f "$name"; fi
+    elif [[ -n "$pid" ]]; then
+        if $force; then kill -9 "$pid"; else kill "$pid"; fi
+    else
+        echo "Usage: spps -Name <name> [-Force]"
+        echo "       spps -Id <pid> [-Force]"
+    fi
+}
+
+# sls — Select-String: search for patterns in files or stdin (case-insensitive by default)
+# Usage: sls [pattern] [files...]   or   cat file | sls pattern
+#        -CaseSensitive   -NotMatch   -Pattern <pattern>
+sls() {
+    local icase="-i" invert="" pattern="" files=() has_pattern=false
+    while [[ $# -gt 0 ]]; do
+        case "${1,,}" in
+            -casesensitive) icase="";       shift ;;
+            -notmatch)      invert="-v";    shift ;;
+            -pattern)       pattern="${2:-}"; has_pattern=true; shift 2 ;;
+            -*)             shift ;;
+            *)
+                if ! $has_pattern; then
+                    pattern="$1"; has_pattern=true
+                else
+                    files+=("$1")
+                fi
+                shift ;;
+        esac
+    done
+    if ! $has_pattern; then
+        echo "Usage: sls [-CaseSensitive] [-NotMatch] pattern [files...]"
+        return 1
+    fi
+    local args=("-E" "$icase")
+    [[ -n "$invert" ]] && args+=("$invert")
+    if [[ ${#files[@]} -gt 0 ]]; then
+        grep "${args[@]}" -- "$pattern" "${files[@]}"
+    else
+        grep "${args[@]}" -- "$pattern"
+    fi
+}
+
+# Format stubs — no direct bash equivalent; point to the right native tools
+alias ft='echo "Linux: column -t (table)   or   awk for custom formatting"'
+alias fl='echo "Linux: cat -n / less / awk '\''{ print NR\": \"$0 }'\'' for list-style output"'
+alias measure='echo "Linux: wc -l (lines)   wc -w (words)   wc -c (bytes)   wc (all)"'
+
 # System admin stubs — tell you the right Linux tool rather than hiding it
 alias chkdsk='echo "Linux: sudo fsck /dev/sdX   (unmount first)"'
 alias format='echo "Linux: sudo mkfs.ext4 /dev/sdX  or  sudo parted"'

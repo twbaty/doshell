@@ -3,7 +3,7 @@
 ![GitHub License](https://img.shields.io/github/license/twbaty/doshell)
 ![GitHub Tag](https://img.shields.io/github/v/tag/twbaty/doshell?label=Version)
 
-**Author:** Tom Baty | **License:** MIT | **Current Version:** v1.9
+**Author:** Tom Baty | **License:** MIT | **Current Version:** v1.10
 
 > "Because sometimes your fingers still type *dir*."
 
@@ -59,6 +59,18 @@
 - [x] `typefile` — safe cat replacement (type shadows bash builtin)
 - [x] `net` — stubs for net user/start/stop/use/share
 - [x] Stubs: icacls, cacls, wmic, schtasks, arp, route
+
+### v1.10
+- [x] `sls` — Select-String (grep wrapper with PS flags)
+- [x] `gcm` — Get-Command (which)
+- [x] `gal` — Get-Alias (alias)
+- [x] `gps` — Get-Process (ps aux)
+- [x] `gl` — Get-Location (pwd)
+- [x] `gv` — Get-Variable (printenv)
+- [x] `ni` — New-Item (touch / mkdir -p)
+- [x] `ii` — Invoke-Item (xdg-open)
+- [x] `spps` — Stop-Process (kill/pkill with -Name/-Id/-Force)
+- [x] Stubs: ft, fl, measure
 
 ---
 

@@ -20,6 +20,7 @@ Type what you know — let Linux respond.
 - Functions with real Windows-style argument parsing (`taskkill /PID 1234 /F`)
 - `notepad`, `start`, and `explorer` that do what you'd expect on Linux
 - Informational stubs for sysadmin commands — tells you the right Linux tool rather than hiding it
+- PowerShell muscle-memory covered: `sls`, `gcm`, `gal`, `ni`, `spps`, and more
 - Works across `bash`, `zsh`, and `dash`
 - Clean installer with `--install`, `--uninstall`, `--reinstall` — no silent changes
 
@@ -93,9 +94,28 @@ Type what you know — let Linux respond.
 
 ### Text Search
 
-| Windows | Linux |
-|---------|-------|
+| Windows / PowerShell | Linux |
+|---------------------|-------|
 | `findstr [/i] [/r] [/n] [/v] [/s] pattern [files]` | `grep` wrapper with Windows flags |
+| `sls [-CaseSensitive] [-NotMatch] pattern [files]` | `grep` wrapper with PS flags |
+
+### PowerShell
+
+| PowerShell | Linux |
+|-----------|-------|
+| `gl` | `pwd` (Get-Location) |
+| `gal` | `alias` (Get-Alias) |
+| `gps` | `ps aux` (Get-Process) |
+| `gcm <cmd>` | `which` (Get-Command) |
+| `ii <path>` | `xdg-open` (Invoke-Item) |
+| `gv [prefix]` | `printenv` (Get-Variable) |
+| `ni <file>` | `touch` (New-Item) |
+| `ni -ItemType Directory <dir>` | `mkdir -p` |
+| `spps -Name <n> [-Force]` | `pkill [-9] -f <name>` (Stop-Process) |
+| `spps -Id <pid> [-Force]` | `kill [-9] <pid>` |
+| `ft` | stub → `column -t` / `awk` |
+| `fl` | stub → `cat -n` / `awk` |
+| `measure` | stub → `wc -l / -w / -c` |
 
 ### Sysadmin Stubs
 
@@ -172,6 +192,7 @@ The installer detects `apt-get`/`apt`, `yum`, `dnf`, and `pacman` automatically 
 | v1.7 | `notepad`, `start`, `explorer`; sysadmin stubs with Linux guidance |
 | v1.8 | Bug fixes: shell detection, `dig` package name, duplicate install guard, safe uninstall sed, `taskkill` operator precedence, `deltree`/`xcopy` safety prompts, removed builtin-shadowing aliases (`fc`, `type`) |
 | v1.9 | `findstr`, `set`, `mklink`, `clip`, `runas`, `title`, `net`, `typefile`; stubs for `icacls`, `cacls`, `wmic`, `schtasks`, `arp`, `route` |
+| v1.10 | PowerShell section: `sls`, `gcm`, `gal`, `gps`, `gl`, `gv`, `ni`, `ii`, `spps`; stubs for `ft`, `fl`, `measure` |
 
 ---
 

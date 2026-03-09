@@ -1,5 +1,21 @@
 # Changelog
 
+## [v1.10] — 2026-03-09
+
+### Added — PowerShell section
+- `sls` — Select-String: grep wrapper with PS-style flags (`-CaseSensitive`, `-NotMatch`, `-Pattern`); case-insensitive by default like PS
+- `gcm` — Get-Command: resolves a command path via `which`
+- `gal` — Get-Alias: lists all active aliases
+- `gps` — Get-Process: `ps aux`
+- `gl` — Get-Location: `pwd`
+- `gv` — Get-Variable: `printenv` with optional prefix filter
+- `ni` — New-Item: `touch` for files; supports `-ItemType Directory` for `mkdir -p`
+- `ii` — Invoke-Item: `xdg-open` (same behaviour as `start`)
+- `spps` — Stop-Process: kill by `-Name` or `-Id`, with `-Force` for `-9`
+- Stubs: `ft` → `column -t`/`awk`, `fl` → `cat -n`/`awk`, `measure` → `wc`
+
+---
+
 ## [v1.9] — 2026-03-09
 
 ### Added
