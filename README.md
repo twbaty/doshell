@@ -10,7 +10,7 @@ Doshell is a lightweight shell enhancement for Linux, designed for anyone who sp
 
 Type what you know — let Linux respond.
 
-> Companion project: [Winix](https://github.com/twbaty/winix) — a Unix-like shell for Windows.
+> Companion project: [Winix](https://github.com/twbaty-labs/winix) — a Unix-like shell for Windows.
 
 ---
 
@@ -140,7 +140,7 @@ These commands are Linux sysadmin territory — doshell tells you the right tool
 ## Installation
 
 ```bash
-git clone https://github.com/twbaty/doshell.git
+git clone https://github.com/twbaty-labs/doshell.git
 cd doshell
 chmod +x setup-doshell.sh
 ./setup-doshell.sh --install
