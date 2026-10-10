@@ -21,7 +21,7 @@ Doshell adds familiar DOS/Windows-style commands to Linux shells, translating co
 - **Why it matters:** The documentation lists Bash, Zsh, and Dash/Ash, but the aliases file does not pass Dash's syntax check.
 - **Options:** A) Support Bash first and update the compatibility claims. B) Support Bash, Zsh, and Dash/Ash and make the aliases work and test them in each.
 - **Recommended:** A) Support Bash first — it matches the Bash-specific implementation and is the smallest path to a tested first version.
-- **Answer:** _(author writes here)_
+- **Answer (2026-10-10, via HQ):** A — Support Bash first and update the compatibility claims
 
 ## Can proceed now
 - Check install and removal in a temporary test account without changing a real user's shell setup or installing system packages.
